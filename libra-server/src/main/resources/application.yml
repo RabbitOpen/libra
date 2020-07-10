@@ -1,0 +1,18 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+server:
+  port: 8888
+
+
+#zk地址信息
+zookeeper:
+  hosts:
+    url: 10.222.16.82:2181
+
+#task 监控根节点
+libra:
+  monitor:
+    root-path: /libra/root
+
+
