@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.net.InetAddress;
 
 /**
@@ -36,8 +37,40 @@ public class RegistryHelper {
     @PostConstruct
     public void init() {
         client = new ZkClient(hosts);
-        createExecutorsNode();
+        createRootPath();
+        createPersistentNode("/executors");
+        createPersistentNode("/tasks");
+        createPersistentNode("/tasks/meta");
+        createPersistentNode("/tasks/meta/system");
+        createPersistentNode("/tasks/meta/users");
+        createPersistentNode("/tasks/execution");
+        createPersistentNode("/tasks/execution/users");
+        createPersistentNode("/tasks/execution/system");
         registerExecutor();
+    }
+
+    /**
+     * 递归创建根节点
+     * @author  xiaoqianbin
+     * @date    2020/7/13
+     **/
+    private void createRootPath() {
+        String[] nodes = rootPath.split("/");
+        String path = "";
+        for (String node : nodes) {
+            if ("".equals(node.trim())) {
+                continue;
+            }
+            path = path + "/" + node;
+            if (client.exists(path)) {
+                return;
+            }
+            try {
+                client.create(path, null, CreateMode.PERSISTENT);
+            } catch (Exception e) {
+                // TO DO: ignore all
+            }
+        }
     }
 
     /**
@@ -47,8 +80,8 @@ public class RegistryHelper {
      **/
     private void registerExecutor() {
         try {
-            executorName = InetAddress.getByName("localhost").getHostName();
-            createNode("/executors/" + executorName, null, CreateMode.PERSISTENT);
+            executorName = InetAddress.getLocalHost().getHostName();
+            replaceNode("/executors/" + executorName, null, CreateMode.EPHEMERAL);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
         }
@@ -56,14 +89,16 @@ public class RegistryHelper {
 
     /**
      * 创建executor目录
+     * @param   nodePath
      * @author  xiaoqianbin
      * @date    2020/7/11
      **/
-    private void createExecutorsNode() {
+    private String createPersistentNode(String nodePath) {
         try {
-            createNode("/executors", null, CreateMode.PERSISTENT);
+            return createNode(nodePath, null, CreateMode.PERSISTENT);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
+            return rootPath + nodePath;
         }
     }
 
@@ -75,9 +110,9 @@ public class RegistryHelper {
      * @author  xiaoqianbin
      * @date    2020/7/11
      **/
-    public void replaceNode(String relative, Object data, CreateMode mode) {
+    public String replaceNode(String relative, Object data, CreateMode mode) {
         removeNode(relative);
-        createNode(relative, data, mode);
+        return createNode(relative, data, mode);
     }
 
     /**
@@ -88,11 +123,11 @@ public class RegistryHelper {
      * @author  xiaoqianbin
      * @date    2020/7/11
      **/
-    public void createNode(String relative, Object data, CreateMode mode) {
+    public String createNode(String relative, Object data, CreateMode mode) {
         if (client.exists(rootPath + relative)) {
-            return;
+            return rootPath + relative;
         }
-        client.create(rootPath + relative, data, mode);
+        return client.create(rootPath + relative, data, mode);
     }
 
     /**
@@ -100,6 +135,7 @@ public class RegistryHelper {
      * @author  xiaoqianbin
      * @date    2020/7/11
      **/
+    @PreDestroy
     public synchronized void destroy() {
         if (!destroyed) {
             removeNode("/executors/" + executorName);
@@ -108,6 +144,23 @@ public class RegistryHelper {
             logger.info("zookeeper client is closed!");
         }
     }
+
+    /**
+     * 注册任务节点
+     * @param	name
+     * @param	data
+	 * @param	system
+     * @author  xiaoqianbin
+     * @date    2020/7/13
+     **/
+    public void registerTaskMeta(String name, Object data, boolean system) {
+        String metaPath = "/tasks/meta/system";
+        if (!system) {
+            metaPath = "/tasks/meta/users";
+        }
+        replaceNode(metaPath + "/" + name, data, CreateMode.PERSISTENT);
+    }
+
 
     /**
      * 删除节点
@@ -123,5 +176,9 @@ public class RegistryHelper {
 
     public ZkClient getClient() {
         return client;
+    }
+
+    public String getRootPath() {
+        return rootPath;
     }
 }

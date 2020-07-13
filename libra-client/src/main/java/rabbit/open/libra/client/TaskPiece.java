@@ -1,5 +1,7 @@
 package rabbit.open.libra.client;
 
+import java.util.List;
+
 /**
  * 抽象分片任务
  * @author xiaoqianbin
@@ -63,10 +65,25 @@ public abstract class TaskPiece {
 
     /**
      * 执行任务
-     * @param	index       分片任务id
-	 * @param	splits    任务的总并发度
+     * @param	index           分片任务id
+	 * @param	splits          任务的总并发度
+	 * @param	executeTime     yyyyMMddHHmmss
      * @author  xiaoqianbin
      * @date    2020/7/10
      **/
-    public abstract void execute(int index, int splits);
+    public abstract void execute(int index, int splits, String executeTime);
+
+    /**
+     * 关闭任务
+     * @author  xiaoqianbin
+     * @date    2020/7/13
+     **/
+    protected abstract void close();
+
+    /**
+     * 任务执行周期
+     * @author  xiaoqianbin
+     * @date    2020/7/13
+     **/
+//    protected abstract List<String> getCrones();
 }

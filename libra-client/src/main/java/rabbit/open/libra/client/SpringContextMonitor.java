@@ -22,7 +22,7 @@ public class SpringContextMonitor implements ApplicationListener<ApplicationCont
     public void onApplicationEvent(ApplicationContextEvent event) {
         if (event instanceof ContextRefreshedEvent) {
             logger.info("开启动分布式任务调度");
-            AbstractLibraTask.runTasks();
+            AbstractLibraTask.runSystemTasks();
         } else {
             logger.info("退出分布式任务调度");
             AbstractLibraTask.shutdown();
