@@ -65,7 +65,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
             taskMap.put(task.getTaskGroup(), new ArrayList<>());
         }
         taskMap.get(task.getTaskGroup()).add(new TaskMeta(task));
-        taskMap.get(task.getTaskGroup()).sort(Comparator.comparing(t -> t.getTaskPiece().getExecuteOrder()));
+        taskMap.get(task.getTaskGroup()).sort(Comparator.comparingInt(TaskMeta::getExecuteOrder).thenComparing(TaskMeta::getTaskName));
     }
 
     /**
@@ -90,7 +90,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
         List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.GROUP_NAME);
         if (!CollectionUtils.isEmpty(systemTasks)) {
             systemTasks.forEach(t -> {
-                t.getTaskPiece().execute(0, 1);
+                t.getTaskPiece().execute(0, 1, null);
             });
         }
     }
@@ -101,12 +101,15 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @date 2020/7/11
      **/
     public synchronized static void shutdown() {
+        // 关闭调度任务
         List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.GROUP_NAME);
         if (!CollectionUtils.isEmpty(systemTasks)) {
             systemTasks.forEach(t -> {
                 t.getTaskPiece().close();
             });
         }
+
+        // 关闭普通任务
         Map<String, List<TaskMeta>> taskMap = getTaskMap();
         for (Map.Entry<String, List<TaskMeta>> entry : taskMap.entrySet()) {
             List<TaskMeta> tasks = entry.getValue();

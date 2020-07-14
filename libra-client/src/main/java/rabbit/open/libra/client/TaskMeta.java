@@ -17,7 +17,7 @@ public class TaskMeta implements Serializable {
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
-    private int executeOrder;
+    private Integer executeOrder;
 
     /**
      * 切片个数
@@ -56,11 +56,11 @@ public class TaskMeta implements Serializable {
         this.taskPiece = taskPiece;
     }
 
-    public int getExecuteOrder() {
+    public Integer getExecuteOrder() {
         return executeOrder;
     }
 
-    public void setExecuteOrder(int executeOrder) {
+    public void setExecuteOrder(Integer executeOrder) {
         this.executeOrder = executeOrder;
     }
 
@@ -94,5 +94,10 @@ public class TaskMeta implements Serializable {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
+    }
+
+    @Override
+    public String toString() {
+        return getTaskName();
     }
 }

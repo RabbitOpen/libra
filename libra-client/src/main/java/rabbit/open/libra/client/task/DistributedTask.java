@@ -3,6 +3,7 @@ package rabbit.open.libra.client.task;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
+import rabbit.open.libra.client.execution.ExecutableTask;
 import rabbit.open.libra.client.execution.ExecutionMeta;
 
 import java.util.ArrayList;
@@ -32,6 +33,11 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
     private Semaphore taskSemaphore;
 
+    /**
+     * 初始化任务线程
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
     public DistributedTask() {
         taskSemaphore = new Semaphore(getParallel());
         taskList = new ArrayBlockingQueue<>(getParallel());
@@ -62,6 +68,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private void executeUserTask(ExecutableTask task) {
         try {
+            logger.info("executing task [{} - {}]", task.getPath(), task.getNode());
             task.run();
             taskSemaphore.release();
             Map<Boolean, List<String>> executeInfo = getExecuteInfo(task.getPath());
@@ -103,13 +110,29 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private synchronized void tryAcquireTask() {
         if (0 == taskSemaphore.availablePermits()) {
+            // 节点没有多余的资源，不执行任务
+            return;
+        }
+        if (!doRecoveryChecking()) {
+            // 没有需要恢复的任务
             return;
         }
         List<String> tasks = getRegistryHelper().getClient().getChildren(taskNodePath);
-        tasks.sort(String::compareTo);
         if (CollectionUtils.isEmpty(tasks)) {
+            // 没有处于调度状态的任务，不执行任务
             return;
         }
+        try2JoinUnFinishedTasks(tasks);
+    }
+
+    /**
+     * 尝试加入正在执行调度的任务
+     * @param	tasks
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    private void try2JoinUnFinishedTasks(List<String> tasks) {
+        tasks.sort(String::compareTo);
         for (String task : tasks) {
             Map<Boolean, List<String>> groups = getExecuteInfo(task);
             List<String> leftPieces = getAvailablePieces(groups);
@@ -122,6 +145,36 @@ public abstract class DistributedTask extends AbstractLibraTask {
                 }
             }
         }
+    }
+
+    /**
+     * 检查是否有需要恢复的任务
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    private boolean doRecoveryChecking() {
+        String schedulePath = getRegistryHelper().getRootPath() + "/tasks/execution/schedule";
+        List<String> groups = getRegistryHelper().getClient().getChildren(schedulePath);
+        for (String group : groups) {
+            if (group.equals(getTaskGroup())) {
+                List<String> schedules = getRegistryHelper().getClient().getChildren(schedulePath + "/" + group);
+                if (schedules.isEmpty()) {
+                    // 没有正在运行的任务，无需恢复
+                    return false;
+                }
+                for (String sch : schedules) {
+                    List<String> tasks = getRegistryHelper().getClient().getChildren(schedulePath + "/" + group + "/" + sch);
+                    if (tasks.isEmpty()) {
+                        continue;
+                    }
+                    tasks.sort(String::compareTo);
+                    if (getTaskName().equals(schedules.get(schedules.size() - 1))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**

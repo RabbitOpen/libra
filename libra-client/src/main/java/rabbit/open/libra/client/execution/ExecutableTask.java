@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.task;
+package rabbit.open.libra.client.execution;
 
 /**
  * 可执行的任务
@@ -9,8 +9,10 @@ public class ExecutableTask implements Runnable {
 
     private Runnable task;
 
+    // 任务上级path
     private String path;
 
+    // 任务分片节点名
     private String node;
 
     public ExecutableTask(Runnable task, String path, String node) {

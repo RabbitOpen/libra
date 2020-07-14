@@ -34,21 +34,6 @@ public class RegistryHelper {
     // 任务节点名字
     private String executorName;
 
-    @PostConstruct
-    public void init() {
-        client = new ZkClient(hosts);
-        createRootPath();
-        createPersistentNode("/executors");
-        createPersistentNode("/tasks");
-        createPersistentNode("/tasks/meta");
-        createPersistentNode("/tasks/meta/system");
-        createPersistentNode("/tasks/meta/users");
-        createPersistentNode("/tasks/execution");
-        createPersistentNode("/tasks/execution/users");
-        createPersistentNode("/tasks/execution/system");
-        registerExecutor();
-    }
-
     /**
      * 递归创建根节点
      * @author  xiaoqianbin
@@ -131,6 +116,28 @@ public class RegistryHelper {
     }
 
     /**
+     * 初始化目录节点
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    @PostConstruct
+    public void init() {
+        client = new ZkClient(hosts);
+        createRootPath();
+        createPersistentNode("/executors");
+        createPersistentNode("/tasks");
+        createPersistentNode("/tasks/meta");
+        createPersistentNode("/tasks/meta/system");
+        createPersistentNode("/tasks/meta/users");
+        createPersistentNode("/tasks/execution");
+        createPersistentNode("/tasks/execution/users");
+        createPersistentNode("/tasks/execution/system");
+        // 处于执行中的任务
+        createPersistentNode("/tasks/execution/schedule");
+        registerExecutor();
+    }
+
+    /**
      * 销毁客户端
      * @author  xiaoqianbin
      * @date    2020/7/11
@@ -160,7 +167,6 @@ public class RegistryHelper {
         }
         replaceNode(metaPath + "/" + name, data, CreateMode.PERSISTENT);
     }
-
 
     /**
      * 删除节点

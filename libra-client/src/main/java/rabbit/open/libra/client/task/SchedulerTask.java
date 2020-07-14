@@ -6,9 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.AbstractLibraTask;
-import rabbit.open.libra.client.ExecuteType;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.TaskMeta;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -30,6 +35,16 @@ public class SchedulerTask extends AbstractLibraTask {
     private RegistryHelper helper;
 
     /**
+     * 任务元信息
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    private Map<String, List<TaskMeta>> taskMetaMap = new ConcurrentHashMap<>();
+
+    // 任务调度map，key是task group， value是task name
+    private Map<String, String> taskScheduleMap = new ConcurrentHashMap<>();
+
+    /**
      * 监控线程阻塞信号
      * @author xiaoqianbin
      * @date 2020/7/13
@@ -45,12 +60,12 @@ public class SchedulerTask extends AbstractLibraTask {
      * 执行任务
      * @param	index
 	 * @param	splits
-	 * @param	executeTime
+	 * @param	taskScheduleTime
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
     @Override
-    public void execute(int index, int splits, String executeTime) {
+    public void execute(int index, int splits, String taskScheduleTime) {
         ZkClient zkClient = getRegistryHelper().getClient();
         String sysNode = getRegistryHelper().getRootPath() + "/tasks/execution/system";
         String sysPath = sysNode + "/" + getTaskName();
@@ -91,8 +106,9 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date    2020/7/13
      **/
     protected void doSchedule() {
+        // 加载任务元信息
         loadTaskMetas();
-        monitorTaskMetas();
+        doRecoveryChecking();
     }
 
     /**
@@ -101,30 +117,52 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date    2020/7/13
      **/
     protected void loadTaskMetas() {
-
+        RegistryHelper helper = getRegistryHelper();
+        String taskPath = helper.getRootPath() + "/tasks/meta/users";
+        List<String> children = helper.getClient().getChildren(taskPath);
+        taskMetaMap.clear();
+        for (String child : children) {
+            TaskMeta meta = helper.getClient().readData(taskPath + "/" + child);
+            if (!taskMetaMap.containsKey(meta.getGroupName())) {
+                taskMetaMap.put(meta.getGroupName(), new ArrayList<>());
+            }
+            taskMetaMap.get(meta.getGroupName()).add(meta);
+            // 排序
+            taskMetaMap.get(meta.getGroupName()).sort(Comparator.comparing(TaskMeta::getExecuteOrder)
+                    .thenComparing(TaskMeta::getTaskName));
+        }
+        // print logs
+        for (Map.Entry<String, List<TaskMeta>> entry : taskMetaMap.entrySet()) {
+            logger.info("found task, group: [{}], tasks: {}", entry.getKey(), entry.getValue());
+        }
     }
 
     /**
-     * 监听任务元信息
+     * 任务恢复检查
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
-    protected void monitorTaskMetas() {
-
+    protected void doRecoveryChecking() {
+        RegistryHelper helper = getRegistryHelper();
+        String scheduleTaskPath = helper.getRootPath() + "/tasks/execution/schedule";
+        List<String> scheduleGroups = helper.getClient().getChildren(scheduleTaskPath);
+        for (String group : scheduleGroups) {
+            List<String> scheduleTasks = getRegistryHelper().getClient().getChildren(scheduleTaskPath + "/" + group);
+            if (scheduleTasks.isEmpty()) {
+                continue;
+            }
+            scheduleTasks.sort(String::compareTo);
+            taskScheduleMap.put(group, scheduleTasks.get(scheduleTasks.size() - 1));
+        }
     }
 
     @Override
-    protected ExecuteType getExecuteType() {
-        return ExecuteType.ACTIVE;
-    }
-
-    @Override
-    protected String getTaskGroup() {
+    protected final String getTaskGroup() {
         return GROUP_NAME;
     }
 
     @Override
-    protected boolean isSystemTask() {
+    protected final boolean isSystemTask() {
         return true;
     }
 

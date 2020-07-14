@@ -1,7 +1,5 @@
 package rabbit.open.libra.client;
 
-import java.util.List;
-
 /**
  * 抽象分片任务
  * @author xiaoqianbin
@@ -10,21 +8,12 @@ import java.util.List;
 public abstract class TaskPiece {
 
     /**
-     * 任务组
+     * 任务组 SYSTEM 任务组的任务一旦注册就会被自动启动
      * @author  xiaoqianbin
      * @date    2020/7/10
      **/
     protected String getTaskGroup() {
         return "DEFAULT";
-    }
-
-    /**
-     * 任务执行类型，主动类型的任务一旦被注册就会立即运行
-     * @author  xiaoqianbin
-     * @date    2020/7/11
-     **/
-    protected ExecuteType getExecuteType() {
-        return ExecuteType.PASSIVE;
     }
 
     /**
@@ -67,11 +56,11 @@ public abstract class TaskPiece {
      * 执行任务
      * @param	index           分片任务id
 	 * @param	splits          任务的总并发度
-	 * @param	executeTime     yyyyMMddHHmmss
+	 * @param	taskScheduleTime     yyyyMMddHHmmss
      * @author  xiaoqianbin
      * @date    2020/7/10
      **/
-    public abstract void execute(int index, int splits, String executeTime);
+    public abstract void execute(int index, int splits, String taskScheduleTime);
 
     /**
      * 关闭任务
