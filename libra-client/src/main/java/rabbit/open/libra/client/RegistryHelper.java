@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.net.InetAddress;
+import java.util.List;
 
 /**
  * zk client 辅助类
@@ -21,11 +22,11 @@ public class RegistryHelper {
 
     // zk地址
     @Value("${zookeeper.hosts.url}")
-    private String hosts;
+    private String hosts = "localhost:2181";
 
     // 监控根节点
-    @Value("${libra.monitor.root-path:/libra/root}")
-    private String rootPath;
+    @Value("${libra.monitor.root-path}")
+    private String rootPath = "/libra/root";
 
     private ZkClient client;
 
@@ -40,7 +41,28 @@ public class RegistryHelper {
      * @date    2020/7/13
      **/
     private void createRootPath() {
-        String[] nodes = rootPath.split("/");
+        createPersistNode(rootPath);
+    }
+
+    /**
+     * 递归创建永久节点
+     * @param	fullPath
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    public void createPersistNode(String fullPath) {
+        createPersistNode(fullPath, null);
+    }
+
+    /**
+     * 递归创建永久节点
+     * @param	fullPath
+     * @param	data
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    public void createPersistNode(String fullPath, Object data) {
+        String[] nodes = fullPath.split("/");
         String path = "";
         for (String node : nodes) {
             if ("".equals(node.trim())) {
@@ -48,10 +70,10 @@ public class RegistryHelper {
             }
             path = path + "/" + node;
             if (client.exists(path)) {
-                return;
+                continue;
             }
             try {
-                client.create(path, null, CreateMode.PERSISTENT);
+                client.create(path, data, CreateMode.PERSISTENT);
             } catch (Exception e) {
                 // TO DO: ignore all
             }
@@ -80,7 +102,7 @@ public class RegistryHelper {
      **/
     private String createPersistentNode(String nodePath) {
         try {
-            return createNode(nodePath, null, CreateMode.PERSISTENT);
+            return createPersistNode(nodePath, null, CreateMode.PERSISTENT);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
             return rootPath + nodePath;
@@ -97,7 +119,7 @@ public class RegistryHelper {
      **/
     public String replaceNode(String relative, Object data, CreateMode mode) {
         removeNode(relative);
-        return createNode(relative, data, mode);
+        return createPersistNode(relative, data, mode);
     }
 
     /**
@@ -108,7 +130,7 @@ public class RegistryHelper {
      * @author  xiaoqianbin
      * @date    2020/7/11
      **/
-    public String createNode(String relative, Object data, CreateMode mode) {
+    public String createPersistNode(String relative, Object data, CreateMode mode) {
         if (client.exists(rootPath + relative)) {
             return rootPath + relative;
         }
@@ -186,5 +208,23 @@ public class RegistryHelper {
 
     public String getRootPath() {
         return rootPath;
+    }
+
+    /**
+     * 删除path以及path下所有子节点
+     * @param	path
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    public void deleteNode(String path) {
+        if (client.exists(path)) {
+            List<String> children = client.getChildren(path);
+            if (!children.isEmpty()) {
+                for (String child : children) {
+                    deleteNode(path + "/" + child);
+                }
+            }
+            client.delete(path);
+        }
     }
 }

@@ -25,9 +25,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
     // /libra/root/tasks/execution/users/{getTaskName()}
     private String taskNodePath;
 
-    // 正在运行的任务的前缀
-    public final static String RUNNING_TASK_PREFIX = "R-";
-
     // 任务队列
     private ArrayBlockingQueue<ExecutableTask> taskList;
 
@@ -71,14 +68,17 @@ public abstract class DistributedTask extends AbstractLibraTask {
             logger.info("executing task [{} - {}]", task.getPath(), task.getNode());
             task.run();
             taskSemaphore.release();
-            Map<Boolean, List<String>> executeInfo = getExecuteInfo(task.getPath());
+            // 新增运行完成的分片节点
+            getRegistryHelper().createPersistNode(task.getPath() + "/" + task.getNode().substring(RUNNING_TASK_PREFIX.length()));
+            // 删除运行中的分片节点
+            getRegistryHelper().deleteNode(task.getPath() + "/" + task.getNode());
+            String[] split = task.getPath().split("/");
+            Map<Boolean, List<String>> executeInfo = getExecuteInfo(split[split.length - 1]);
             if (executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
             } else {
-                // 继续处理任务
                 tryAcquireTask();
             }
-            // todo 生成任务完成节点
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             taskSemaphore.release();
@@ -96,11 +96,15 @@ public abstract class DistributedTask extends AbstractLibraTask {
         String sysNode = getRegistryHelper().getRootPath() + "/tasks/execution/users";
         taskNodePath = sysNode + "/" + getTaskName();
         registerTaskExecutionNode(taskNodePath);
+        // 监听任务发布信息
         getRegistryHelper().getClient().subscribeChildChanges(taskNodePath, (path, list) -> {
             logger.info("task [{} - {}] is published", getTaskName(), list);
             tryAcquireTask();
         });
-        tryAcquireTask();
+        if (doRecoveryChecking()) {
+            // 没有需要恢复的任务
+            tryAcquireTask();
+        }
     }
 
     /**
@@ -111,10 +115,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
     private synchronized void tryAcquireTask() {
         if (0 == taskSemaphore.availablePermits()) {
             // 节点没有多余的资源，不执行任务
-            return;
-        }
-        if (!doRecoveryChecking()) {
-            // 没有需要恢复的任务
             return;
         }
         List<String> tasks = getRegistryHelper().getClient().getChildren(taskNodePath);
@@ -141,7 +141,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
                         new ExecutionMeta(new Date(), null , getTaskName()),
                         CreateMode.EPHEMERAL)) {
                     deductPermits();
-                    addTask(taskNodePath + "/" + task, RUNNING_TASK_PREFIX + piece, task);
+                    addTask(task, RUNNING_TASK_PREFIX + piece, task);
                 }
             }
         }
@@ -183,9 +183,9 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
-    private Map<Boolean, List<String>> getExecuteInfo(String task) {
-        List<String> statusList = getRegistryHelper().getClient().getChildren(taskNodePath + "/" + task);
-        return statusList.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
+    protected Map<Boolean, List<String>> getExecuteInfo(String task) {
+        List<String> children = getRegistryHelper().getClient().getChildren(taskNodePath + "/" + task);
+        return children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
     }
 
     /**

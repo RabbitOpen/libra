@@ -7,6 +7,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.task.SchedulerTask;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -21,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractLibraTask extends TaskPiece implements InitializingBean {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
+
+    // 正在运行的任务的前缀
+    public final static String RUNNING_TASK_PREFIX = "R-";
 
     /**
      * 任务缓存
@@ -143,7 +148,20 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @date 2020/7/13
      **/
     protected boolean try2AcquireControl(String path, CreateMode mode) {
-        return try2AcquireControl(path, null, mode);
+        return try2AcquireControl(path, getHostName(), mode);
+    }
+
+    /**
+     * 获取当前主机名
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    protected String getHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            return "UnknownHost";
+        }
     }
 
     /**

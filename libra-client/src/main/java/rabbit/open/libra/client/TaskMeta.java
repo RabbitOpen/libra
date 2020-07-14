@@ -1,6 +1,7 @@
 package rabbit.open.libra.client;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * task meta 信息
@@ -39,6 +40,9 @@ public class TaskMeta implements Serializable {
     // 任务名
     private String taskName;
 
+    // 任务执行的时间表达式
+    private List<String> crones;
+
     public TaskMeta(TaskPiece taskPiece) {
         setTaskPiece(taskPiece);
         setExecuteOrder(taskPiece.getExecuteOrder());
@@ -46,6 +50,7 @@ public class TaskMeta implements Serializable {
         setParallel(taskPiece.getParallel());
         setGroupName(taskPiece.getTaskGroup());
         setTaskName(taskPiece.getTaskName());
+        setCrones(taskPiece.getCrones());
     }
 
     public TaskPiece getTaskPiece() {
@@ -94,6 +99,14 @@ public class TaskMeta implements Serializable {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
+    }
+
+    public List<String> getCrones() {
+        return crones;
+    }
+
+    public void setCrones(List<String> crones) {
+        this.crones = crones;
     }
 
     @Override
