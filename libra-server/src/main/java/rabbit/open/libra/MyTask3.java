@@ -11,7 +11,7 @@ import javax.annotation.Resource;
  * @date 2020/7/13
  **/
 @Component
-public class MyTask extends DistributedTask {
+public class MyTask3 extends DistributedTask {
 
     @Resource
     RegistryHelper helper;
@@ -34,5 +34,10 @@ public class MyTask extends DistributedTask {
     @Override
     protected Integer getExecuteOrder() {
         return 0;
+    }
+
+    @Override
+    protected String getTaskGroup() {
+        return "G3";
     }
 }
