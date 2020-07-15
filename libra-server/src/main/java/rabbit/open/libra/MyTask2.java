@@ -39,9 +39,7 @@ public class MyTask2 extends DistributedTask {
     }
 
     @Override
-    protected List<String> getCronExpression() {
-        List<String> list = new ArrayList<>();
-        list.add("0/30 * * * * *");
-        return list;
+    protected String getCronExpression() {
+        return "0/30 * * * * *";
     }
 }
