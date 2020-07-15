@@ -18,6 +18,31 @@ import java.util.List;
  **/
 public class RegistryHelper {
 
+    /**
+     * 运行信息路径
+     **/
+    public static final String TASKS_EXECUTION_RUNNING = "/tasks/execution/running";
+
+    /**
+     * 调度任务节点路径
+     **/
+    public static final String TASKS_EXECUTION_SCHEDULE = "/tasks/execution/schedule";
+
+    /**
+     * 用户任务节点路径
+     **/
+    public static final String TASKS_EXECUTION_USERS = "/tasks/execution/users";
+
+    /**
+     * 用户任务meta信息路径
+     **/
+    public static final String TASKS_META_USERS = "/tasks/meta/users";
+
+    /**
+     * 调度任务meta信息路径
+     **/
+    public static final String TASKS_META_SCHEDULE = "/tasks/meta/schedule";
+
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     // zk地址
@@ -85,7 +110,7 @@ public class RegistryHelper {
      * @author  xiaoqianbin
      * @date    2020/7/11
      **/
-    private void registerExecutor() {
+    public void registerExecutor() {
         try {
             executorName = InetAddress.getLocalHost().getHostName();
             replaceNode("/executors/" + executorName, null, CreateMode.EPHEMERAL);
@@ -149,13 +174,13 @@ public class RegistryHelper {
         createPersistentNode("/executors");
         createPersistentNode("/tasks");
         createPersistentNode("/tasks/meta");
-        createPersistentNode("/tasks/meta/system");
-        createPersistentNode("/tasks/meta/users");
+        createPersistentNode(TASKS_META_SCHEDULE);
+        createPersistentNode(TASKS_META_USERS);
         createPersistentNode("/tasks/execution");
-        createPersistentNode("/tasks/execution/users");
-        createPersistentNode("/tasks/execution/system");
+        createPersistentNode(TASKS_EXECUTION_USERS);
+        createPersistentNode(TASKS_EXECUTION_SCHEDULE);
         // 处于执行中的任务
-        createPersistentNode("/tasks/execution/schedule");
+        createPersistentNode(TASKS_EXECUTION_RUNNING);
         registerExecutor();
     }
 
@@ -183,9 +208,9 @@ public class RegistryHelper {
      * @date    2020/7/13
      **/
     public void registerTaskMeta(String name, Object data, boolean system) {
-        String metaPath = "/tasks/meta/system";
+        String metaPath = TASKS_META_SCHEDULE;
         if (!system) {
-            metaPath = "/tasks/meta/users";
+            metaPath = TASKS_META_USERS;
         }
         replaceNode(metaPath + "/" + name, data, CreateMode.PERSISTENT);
     }

@@ -1,7 +1,11 @@
 package rabbit.open.libra.client;
 
+import org.springframework.scheduling.TriggerContext;
+import org.springframework.scheduling.support.CronTrigger;
+
 import java.io.Serializable;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * task meta 信息
@@ -41,7 +45,10 @@ public class TaskMeta implements Serializable {
     private String taskName;
 
     // 任务执行的时间表达式
-    private List<String> crones;
+    private String cronExpression;
+
+    // 下次调度时间
+    private String nextScheduleTime;
 
     public TaskMeta(TaskPiece taskPiece) {
         setTaskPiece(taskPiece);
@@ -50,7 +57,34 @@ public class TaskMeta implements Serializable {
         setParallel(taskPiece.getParallel());
         setGroupName(taskPiece.getTaskGroup());
         setTaskName(taskPiece.getTaskName());
-        setCrones(taskPiece.getCrones());
+        setCronExpression(taskPiece.getCronExpression());
+    }
+
+    /**
+     * 获取任务下次调度时间
+     * @param   lastCompletionTime
+     * @author  xiaoqianbin
+     * @date    2020/7/15
+     **/
+    public String getNextScheduleTime(Date lastCompletionTime) {
+        CronTrigger trigger = new CronTrigger(getCronExpression());
+        Date date = trigger.nextExecutionTime(new TriggerContext() {
+            @Override
+            public Date lastScheduledExecutionTime() {
+                return null;
+            }
+            @Override
+            public Date lastActualExecutionTime() {
+                return null;
+            }
+            @Override
+            public Date lastCompletionTime() {
+                return lastCompletionTime;
+            }
+        });
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        nextScheduleTime = sdf.format(date);
+        return nextScheduleTime;
     }
 
     public TaskPiece getTaskPiece() {
@@ -101,12 +135,12 @@ public class TaskMeta implements Serializable {
         this.taskName = taskName;
     }
 
-    public List<String> getCrones() {
-        return crones;
+    public String getCronExpression() {
+        return cronExpression;
     }
 
-    public void setCrones(List<String> crones) {
-        this.crones = crones;
+    public void setCronExpression(String cronExpression) {
+        this.cronExpression = cronExpression;
     }
 
     @Override

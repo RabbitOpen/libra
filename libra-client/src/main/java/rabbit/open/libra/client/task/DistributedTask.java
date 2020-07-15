@@ -3,6 +3,7 @@ package rabbit.open.libra.client.task;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
+import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.execution.ExecutableTask;
 import rabbit.open.libra.client.execution.ExecutionMeta;
 
@@ -51,7 +52,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
                         executeUserTask(task);
                     }
                 }
-            });
+            }, getTaskName() + "-" + i);
             executor.setDaemon(false);
             executor.start();
         };
@@ -69,10 +70,10 @@ public abstract class DistributedTask extends AbstractLibraTask {
             task.run();
             taskSemaphore.release();
             // 新增运行完成的分片节点
-            getRegistryHelper().createPersistNode(task.getPath() + "/" + task.getNode().substring(RUNNING_TASK_PREFIX.length()));
+            getRegistryHelper().createPersistNode(task.getPath() + PS + task.getNode().substring(RUNNING_TASK_PREFIX.length()));
             // 删除运行中的分片节点
-            getRegistryHelper().deleteNode(task.getPath() + "/" + task.getNode());
-            String[] split = task.getPath().split("/");
+            getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
+            String[] split = task.getPath().split(PS);
             Map<Boolean, List<String>> executeInfo = getExecuteInfo(split[split.length - 1]);
             if (executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
@@ -93,8 +94,8 @@ public abstract class DistributedTask extends AbstractLibraTask {
     @Override
     public void afterPropertiesSet() throws Exception {
         super.afterPropertiesSet();
-        String sysNode = getRegistryHelper().getRootPath() + "/tasks/execution/users";
-        taskNodePath = sysNode + "/" + getTaskName();
+        String sysNode = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS;
+        taskNodePath = sysNode + PS + getTaskName();
         registerTaskExecutionNode(taskNodePath);
         // 监听任务发布信息
         getRegistryHelper().getClient().subscribeChildChanges(taskNodePath, (path, list) -> {
@@ -137,7 +138,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
             Map<Boolean, List<String>> groups = getExecuteInfo(task);
             List<String> leftPieces = getAvailablePieces(groups);
             for (String piece : leftPieces) {
-                if (taskSemaphore.availablePermits() > 0 && try2AcquireControl(taskNodePath + "/" + task + "/" + RUNNING_TASK_PREFIX + piece,
+                if (taskSemaphore.availablePermits() > 0 && try2AcquireControl(taskNodePath + PS + task + PS + RUNNING_TASK_PREFIX + piece,
                         new ExecutionMeta(new Date(), null , getTaskName()),
                         CreateMode.EPHEMERAL)) {
                     deductPermits();
@@ -153,17 +154,17 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @date    2020/7/14
      **/
     private boolean doRecoveryChecking() {
-        String schedulePath = getRegistryHelper().getRootPath() + "/tasks/execution/schedule";
+        String schedulePath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING;
         List<String> groups = getRegistryHelper().getClient().getChildren(schedulePath);
         for (String group : groups) {
             if (group.equals(getTaskGroup())) {
-                List<String> schedules = getRegistryHelper().getClient().getChildren(schedulePath + "/" + group);
+                List<String> schedules = getRegistryHelper().getClient().getChildren(schedulePath + PS + group);
                 if (schedules.isEmpty()) {
                     // 没有正在运行的任务，无需恢复
                     return false;
                 }
                 for (String sch : schedules) {
-                    List<String> tasks = getRegistryHelper().getClient().getChildren(schedulePath + "/" + group + "/" + sch);
+                    List<String> tasks = getRegistryHelper().getClient().getChildren(schedulePath + PS + group + PS + sch);
                     if (tasks.isEmpty()) {
                         continue;
                     }
@@ -184,7 +185,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @date    2020/7/13
      **/
     protected Map<Boolean, List<String>> getExecuteInfo(String task) {
-        List<String> children = getRegistryHelper().getClient().getChildren(taskNodePath + "/" + task);
+        List<String> children = getRegistryHelper().getClient().getChildren(taskNodePath + PS + task);
         return children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
     }
 

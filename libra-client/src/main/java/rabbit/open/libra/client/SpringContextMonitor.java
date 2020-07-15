@@ -8,7 +8,6 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 /**
- *
  * spring context 监视器
  * @author xiaoqianbin
  * @date 2020/7/10

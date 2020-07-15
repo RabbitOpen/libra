@@ -24,8 +24,15 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    // 正在运行的任务的前缀
+    /**
+     * 正在运行的任务的前缀
+     **/
     public final static String RUNNING_TASK_PREFIX = "R-";
+
+    /**
+     * path separator
+     **/
+    public static final String PS = "/";
 
     /**
      * 任务缓存
@@ -92,11 +99,45 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
             return;
         }
         executeStatus = true;
-        List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.GROUP_NAME);
+        refreshMeta();
+        List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.SCHEDULE_GROUP);
         if (!CollectionUtils.isEmpty(systemTasks)) {
             systemTasks.forEach(t -> {
                 t.getTaskPiece().execute(0, 1, null);
             });
+        }
+    }
+
+    /**
+     * 刷新meta信息, 移除多余的meta节点信息
+     * @author  xiaoqianbin
+     * @date    2020/7/15
+     **/
+    private static void refreshMeta() {
+        Map<String, List<TaskMeta>> map = getTaskMap();
+        if (map.isEmpty()) {
+            return;
+        }
+        AbstractLibraTask task = (AbstractLibraTask) map.values().iterator().next().get(0).getTaskPiece();
+        RegistryHelper helper = task.getRegistryHelper();
+        String metaPath = helper.getRootPath() + RegistryHelper.TASKS_META_USERS;
+        List<String> children = helper.getClient().getChildren(metaPath);
+        for (String child : children) {
+            boolean exists = false;
+            for (List<TaskMeta> metas : map.values()) {
+                for (TaskMeta meta : metas) {
+                    if (meta.getTaskName().equals(child)) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (exists) {
+                    break;
+                }
+            }
+            if (!exists) {
+                helper.getClient().delete(metaPath + PS + child);
+            }
         }
     }
 
@@ -107,7 +148,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      **/
     public synchronized static void shutdown() {
         // 关闭调度任务
-        List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.GROUP_NAME);
+        List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.SCHEDULE_GROUP);
         if (!CollectionUtils.isEmpty(systemTasks)) {
             systemTasks.forEach(t -> {
                 t.getTaskPiece().close();
@@ -134,7 +175,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @date    2020/7/13
      **/
     private static void closeTask(TaskMeta task) {
-        if (SchedulerTask.GROUP_NAME.equals(task.getTaskPiece().getTaskGroup())) {
+        if (SchedulerTask.SCHEDULE_GROUP.equals(task.getTaskPiece().getTaskGroup())) {
             return;
         }
         task.getTaskPiece().close();
@@ -148,7 +189,16 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @date 2020/7/13
      **/
     protected boolean try2AcquireControl(String path, CreateMode mode) {
-        return try2AcquireControl(path, getHostName(), mode);
+        return try2AcquireControl(path, getLeaderName(), mode);
+    }
+
+    /**
+     * 获取主节点名
+     * @author  xiaoqianbin
+     * @date    2020/7/14
+     **/
+    protected String getLeaderName() {
+        return getHostName();
     }
 
     /**

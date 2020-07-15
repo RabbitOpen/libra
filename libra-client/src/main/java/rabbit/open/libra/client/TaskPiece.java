@@ -76,5 +76,5 @@ public abstract class TaskPiece {
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
-    protected abstract List<String> getCrones();
+    protected abstract String getCronExpression();
 }
