@@ -5,8 +5,6 @@ import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.task.DistributedTask;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author xiaoqianbin
@@ -25,7 +23,22 @@ public class MyTask extends DistributedTask {
 
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
+        logger.info("{}-->{}-{} is executed at {} ", getTaskGroup(), getTaskName(), index, taskScheduleTime);
+        try {
+            Thread.sleep(5000);
+        } catch (Exception e) {
+        }
 
+    }
+
+    @Override
+    protected int getSplitsCount() {
+        return 5;
+    }
+
+    @Override
+    protected int getParallel() {
+        return 2;
     }
 
     @Override
@@ -40,6 +53,6 @@ public class MyTask extends DistributedTask {
 
     @Override
     protected String getCronExpression() {
-        return "0/30 * * * * *";
+        return "0/10 * * * * *";
     }
 }

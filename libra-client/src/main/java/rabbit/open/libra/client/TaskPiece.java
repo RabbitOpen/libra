@@ -1,7 +1,5 @@
 package rabbit.open.libra.client;
 
-import java.util.List;
-
 /**
  * 抽象分片任务
  * @author xiaoqianbin

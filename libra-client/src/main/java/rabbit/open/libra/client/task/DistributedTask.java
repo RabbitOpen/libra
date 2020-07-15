@@ -75,11 +75,11 @@ public abstract class DistributedTask extends AbstractLibraTask {
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
             String[] split = task.getPath().split(PS);
             Map<Boolean, List<String>> executeInfo = getExecuteInfo(split[split.length - 1]);
-            if (executeInfo.get(false).size() == getSplitsCount()) {
+            logger.info("task[{}/{}] is finished", task.getPath(), task.getNode().substring(RUNNING_TASK_PREFIX.length()));
+            if (executeInfo.containsKey(false) && executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
-            } else {
-                tryAcquireTask();
             }
+            tryAcquireTask();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             taskSemaphore.release();
@@ -102,10 +102,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
             logger.info("task [{} - {}] is published", getTaskName(), list);
             tryAcquireTask();
         });
-        if (doRecoveryChecking()) {
-            // 没有需要恢复的任务
-            tryAcquireTask();
-        }
+        tryAcquireTask();
     }
 
     /**
@@ -123,16 +120,16 @@ public abstract class DistributedTask extends AbstractLibraTask {
             // 没有处于调度状态的任务，不执行任务
             return;
         }
-        try2JoinUnFinishedTasks(tasks);
+        tryAcquireUnFinishedTasks(tasks);
     }
 
     /**
-     * 尝试加入正在执行调度的任务
+     * 尝试获取处于调度状态的任务
      * @param	tasks
      * @author  xiaoqianbin
      * @date    2020/7/14
      **/
-    private void try2JoinUnFinishedTasks(List<String> tasks) {
+    private void tryAcquireUnFinishedTasks(List<String> tasks) {
         tasks.sort(String::compareTo);
         for (String task : tasks) {
             Map<Boolean, List<String>> groups = getExecuteInfo(task);
@@ -142,40 +139,10 @@ public abstract class DistributedTask extends AbstractLibraTask {
                         new ExecutionMeta(new Date(), null , getTaskName()),
                         CreateMode.EPHEMERAL)) {
                     deductPermits();
-                    addTask(task, RUNNING_TASK_PREFIX + piece, task);
+                    addTask(taskNodePath + PS + task, RUNNING_TASK_PREFIX + piece, task);
                 }
             }
         }
-    }
-
-    /**
-     * 检查是否有需要恢复的任务
-     * @author  xiaoqianbin
-     * @date    2020/7/14
-     **/
-    private boolean doRecoveryChecking() {
-        String schedulePath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING;
-        List<String> groups = getRegistryHelper().getClient().getChildren(schedulePath);
-        for (String group : groups) {
-            if (group.equals(getTaskGroup())) {
-                List<String> schedules = getRegistryHelper().getClient().getChildren(schedulePath + PS + group);
-                if (schedules.isEmpty()) {
-                    // 没有正在运行的任务，无需恢复
-                    return false;
-                }
-                for (String sch : schedules) {
-                    List<String> tasks = getRegistryHelper().getClient().getChildren(schedulePath + PS + group + PS + sch);
-                    if (tasks.isEmpty()) {
-                        continue;
-                    }
-                    tasks.sort(String::compareTo);
-                    if (getTaskName().equals(schedules.get(schedules.size() - 1))) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     /**
@@ -228,12 +195,16 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private List<String> getAvailablePieces(Map<Boolean, List<String>> groups) {
         List<String> leftPieces = new ArrayList<>();
-        for (int i = 0; i < getParallel(); i++) {
+        for (int i = 0; i < getSplitsCount(); i++) {
             leftPieces.add(i + "");
         }
-        leftPieces.removeAll(groups.get(true));
-        for (String s : groups.get(false)) {
-            leftPieces.remove(s.substring(RUNNING_TASK_PREFIX.length()));
+        if (groups.containsKey(false)) {
+            leftPieces.removeAll(groups.get(false));
+        }
+        if (groups.containsKey(true)) {
+            for (String s : groups.get(true)) {
+                leftPieces.remove(s.substring(RUNNING_TASK_PREFIX.length()));
+            }
         }
         return leftPieces;
     }

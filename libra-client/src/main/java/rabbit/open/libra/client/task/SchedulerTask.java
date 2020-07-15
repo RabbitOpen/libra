@@ -8,14 +8,14 @@ import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -32,15 +32,15 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 调度组
-     * @author  xiaoqianbin
-     * @date    2020/7/15
+     * @author xiaoqianbin
+     * @date 2020/7/15
      **/
     public final static String SCHEDULE_GROUP = "SYSTEM";
 
     /**
      * 调度线程
-     * @author  xiaoqianbin
-     * @date    2020/7/15
+     * @author xiaoqianbin
+     * @date 2020/7/15
      **/
     private Thread schedulerThread;
 
@@ -48,8 +48,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * leader   节点
-     * @author  xiaoqianbin
-     * @date    2020/7/15
+     * @author xiaoqianbin
+     * @date 2020/7/15
      **/
     private boolean leader = false;
 
@@ -58,15 +58,15 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 任务元信息 key: group名
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private Map<String, List<TaskMeta>> taskMetaMap = new ConcurrentHashMap<>();
 
     /**
      * 节点监听器列表
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private Map<String, IZkChildListener> listenerMap = new ConcurrentHashMap<>();
 
@@ -82,6 +82,13 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     private Semaphore scheduleSemaphore = new Semaphore(0);
 
+    /**
+     * 任务组调度时间
+     * @author  xiaoqianbin
+     * @date    2020/7/15
+     **/
+    private Map<String, Date> groupScheduleMap = new ConcurrentHashMap<>();
+
     @Override
     public RegistryHelper getRegistryHelper() {
         return helper;
@@ -89,11 +96,11 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 执行任务
-     * @param	index
-	 * @param	splits
-	 * @param	taskScheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @param index
+     * @param splits
+     * @param taskScheduleTime
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
@@ -121,8 +128,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 启动调度线程
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private void startScheduleThread() {
         schedulerThread = new Thread(() -> {
@@ -147,9 +154,9 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 注册网络事件
-     * @param	zkClient
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param zkClient
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private void registerStateChangeListener(ZkClient zkClient) {
 
@@ -157,7 +164,7 @@ public class SchedulerTask extends AbstractLibraTask {
 
             /**
              * 表示服务是否丢失过
-             * @date    2020/7/15
+             * @date 2020/7/15
              **/
             private boolean lost = false;
 
@@ -173,8 +180,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
             /**
              * server连接成功
-             * @author  xiaoqianbin
-             * @date    2020/7/15
+             * @author xiaoqianbin
+             * @date 2020/7/15
              **/
             private void serverConnected() {
                 if (!lost) {
@@ -197,8 +204,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
             /**
              * server节点丢失
-             * @author  xiaoqianbin
-             * @date    2020/7/15
+             * @author xiaoqianbin
+             * @date 2020/7/15
              **/
             private void serverLost() {
                 logger.error("zookeeper server is lost");
@@ -220,8 +227,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 执行调度
-     * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     protected void beginSchedule() {
         // 加载任务元信息
@@ -234,8 +241,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 定时调度的任务节点
-     * @author  xiaoqianbin
-     * @date    2020/7/15
+     * @author xiaoqianbin
+     * @date 2020/7/15
      **/
     private void doSchedule() {
         logger.info("scheduler job is running....");
@@ -249,10 +256,7 @@ public class SchedulerTask extends AbstractLibraTask {
                     if (SCHEDULE_GROUP.equals(entry.getKey())) {
                         continue;
                     }
-                    List<TaskMeta> groupMetas = entry.getValue();
-                    if (!groupMetas.isEmpty()) {
-                        groupMetas.get(0).getCronExpression();
-                    }
+                    tryScheduleTaskGroup(entry.getValue());
                 }
                 scheduleSemaphore.tryAcquire(3, TimeUnit.SECONDS);
             } catch (Exception e) {
@@ -263,9 +267,64 @@ public class SchedulerTask extends AbstractLibraTask {
     }
 
     /**
-     * 加载任务元信息
+     * 尝试调度任务组
+     * @param	groupMetas
      * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @date    2020/7/15
+     **/
+    private void tryScheduleTaskGroup(List<TaskMeta> groupMetas) throws ParseException {
+        if (groupMetas.isEmpty()) {
+            return;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        String taskName = groupMetas.get(0).getTaskName();
+        String group = groupMetas.get(0).getGroupName();
+        Date nextScheduleTime = getNextScheduleTime(groupMetas);
+        if (nextScheduleTime.before(new Date())) {
+            RegistryHelper helper = getRegistryHelper();
+            String schedule = sdf.format(nextScheduleTime);
+            String executePath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + schedule;
+            helper.createPersistNode(executePath);
+            groupScheduleMap.remove(group);
+            logger.info("task group[{}] is scheduled at [{}]", group, schedule);
+            helper.createPersistNode(helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group + PS + schedule);
+        }
+    }
+
+    /**
+     * 获取任务组下次调度的时间
+	 * @param	groupMetas
+     * @author  xiaoqianbin
+     * @date    2020/7/15
+     **/
+    private Date getNextScheduleTime(List<TaskMeta> groupMetas) throws ParseException {
+        String group = groupMetas.get(0).getGroupName();
+        String taskName = groupMetas.get(0).getTaskName();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        RegistryHelper helper = getRegistryHelper();
+        if (groupScheduleMap.containsKey(group)) {
+            String scheduleTask = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + sdf.format(groupScheduleMap.get(group));
+            if (!helper.getClient().exists(scheduleTask)) {
+                return groupScheduleMap.get(group);
+            }
+        }
+        // 历史schedule
+        List<String> historySchedules = helper.getClient().getChildren(helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName);
+        Date nextScheduleTime;
+        if (CollectionUtils.isEmpty(historySchedules)) {
+            nextScheduleTime = groupMetas.get(0).getNextScheduleTime(null);
+        } else {
+            historySchedules.sort(String::compareTo);
+            nextScheduleTime = groupMetas.get(0).getNextScheduleTime(sdf.parse(historySchedules.get(historySchedules.size() - 1)));
+        }
+        groupScheduleMap.put(group, nextScheduleTime);
+        return nextScheduleTime;
+    }
+
+    /**
+     * 加载任务元信息
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     protected void loadTaskMetas() {
         RegistryHelper helper = getRegistryHelper();
@@ -290,8 +349,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 任务恢复
-     * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     protected void recoverUnFinishedTasks() {
         RegistryHelper helper = getRegistryHelper();
@@ -313,11 +372,11 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 注册任务执行情况监听器
-     * @param	scheduleTaskPath
-	 * @param	group
-	 * @param	scheduleTasks
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param scheduleTaskPath
+     * @param group
+     * @param scheduleTasks
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private void registerTaskExecutionListener(String scheduleTaskPath, String group, List<String> scheduleTasks) {
         String taskName = scheduleTasks.get(scheduleTasks.size() - 1);
@@ -334,39 +393,39 @@ public class SchedulerTask extends AbstractLibraTask {
             listenerMap.put(execPath, listener);
             getRegistryHelper().getClient().subscribeChildChanges(execPath, listener);
             // 检测下任务的完成状态，如果完成了，需要更新下执行节点
-            checkExecutionStatus(group, taskName, scheduleTime);
+            checkSchedulingStatus(group, taskName, scheduleTime);
         }
     }
 
     /**
      * 创建一个节点监听器
-     * @param	group
-	 * @param	taskName
-	 * @param	scheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param group
+     * @param taskName
+     * @param scheduleTime
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private IZkChildListener createExecutionListener(String group, String taskName, String scheduleTime) {
         return (nodePath, list) -> {
-            checkExecutionStatus(group, taskName, scheduleTime);
+            checkSchedulingStatus(group, taskName, scheduleTime);
         };
     }
 
     /**
      * 检测下任务的完成状态，如果完成了，需要更新下执行节点
-     * @param	group
-	 * @param	taskName
-	 * @param	scheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param group
+     * @param taskName
+     * @param scheduleTime
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
-    private void checkExecutionStatus(String group, String taskName, String scheduleTime) {
+    private void checkSchedulingStatus(String group, String taskName, String scheduleTime) {
         String execPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
         synchronized (listenerMap.get(execPath)) {
             List<String> children = getRegistryHelper().getClient().getChildren(execPath);
             Map<Boolean, List<String>> statusMap = children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
             int splitsCount = taskMetaMap.get(group).stream().filter(t -> t.getTaskName().equals(taskName)).collect(Collectors.toList()).get(0).getSplitsCount();
-            if (statusMap.get(false).size() != splitsCount) {
+            if (statusMap.containsKey(false) && statusMap.get(false).size() != splitsCount) {
                 // 还有未完成的分片 直接跳过
                 return;
             }
@@ -375,15 +434,14 @@ public class SchedulerTask extends AbstractLibraTask {
             String runningRoot = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
             if (null != nextTask) {
                 // 调度分组中的下一个任务
-                getRegistryHelper().createPersistNode(runningRoot + PS + nextTask + PS + scheduleTime);
+                getRegistryHelper().createPersistNode(runningRoot + PS + scheduleTime + PS + nextTask);
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
-                String nextExecPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS +
-                        PS + nextTask + PS + scheduleTime;
+                String nextExecPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + scheduleTime + PS + nextTask;
                 getRegistryHelper().createPersistNode(nextExecPath);
                 // 注册下个节点的监听事件
                 IZkChildListener listener = createExecutionListener(group, nextTask, scheduleTime);
-                listenerMap.put(execPath, listener);
-                getRegistryHelper().getClient().subscribeChildChanges(execPath, listener);
+                listenerMap.put(nextExecPath, listener);
+                getRegistryHelper().getClient().subscribeChildChanges(nextExecPath, listener);
             } else {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
             }
@@ -392,25 +450,25 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 移除已完成的节点schedule信息
-     * @param	taskName        任务名
-	 * @param	scheduleTime    scheduleTime
-	 * @param	runningRoot    {rootPath} + "/tasks/execution/running/" + group
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param taskName     任务名
+     * @param scheduleTime scheduleTime
+     * @param runningRoot  {rootPath} + "/tasks/execution/running/" + group
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private void removeLastTaskScheduleInfo(String taskName, String scheduleTime, String runningRoot) {
-        getRegistryHelper().deleteNode(runningRoot + PS + taskName + PS + scheduleTime);
-        if (getRegistryHelper().getClient().getChildren(runningRoot + taskName).isEmpty()) {
-            getRegistryHelper().deleteNode(runningRoot + PS + taskName);
+        getRegistryHelper().deleteNode(runningRoot + PS + scheduleTime + PS + taskName);
+        if (getRegistryHelper().getClient().getChildren(runningRoot + scheduleTime).isEmpty()) {
+            getRegistryHelper().deleteNode(runningRoot + PS + scheduleTime);
         }
     }
 
     /**
      * 获取分组中的下一个任务
-     * @param	group
-	 * @param	taskName
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param group
+     * @param taskName
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private String getNextTask(String group, String taskName) {
         List<TaskMeta> groupTasks = getTaskMap().get(group);
@@ -424,11 +482,11 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 移除多余的注册信息（意外终止可能来不及清理的执行信息）
-     * @param	runningTaskPath
-	 * @param	group
-	 * @param	scheduleTasks
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @param runningTaskPath
+     * @param group
+     * @param scheduleTasks
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     private void removeDirtyRegistryInformation(String runningTaskPath, String group, List<String> scheduleTasks) {
         if (scheduleTasks.size() > 1) {

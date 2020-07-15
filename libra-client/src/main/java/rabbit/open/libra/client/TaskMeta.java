@@ -4,7 +4,6 @@ import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.support.CronTrigger;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -47,9 +46,6 @@ public class TaskMeta implements Serializable {
     // 任务执行的时间表达式
     private String cronExpression;
 
-    // 下次调度时间
-    private String nextScheduleTime;
-
     public TaskMeta(TaskPiece taskPiece) {
         setTaskPiece(taskPiece);
         setExecuteOrder(taskPiece.getExecuteOrder());
@@ -66,9 +62,9 @@ public class TaskMeta implements Serializable {
      * @author  xiaoqianbin
      * @date    2020/7/15
      **/
-    public String getNextScheduleTime(Date lastCompletionTime) {
+    public Date getNextScheduleTime(Date lastCompletionTime) {
         CronTrigger trigger = new CronTrigger(getCronExpression());
-        Date date = trigger.nextExecutionTime(new TriggerContext() {
+        return trigger.nextExecutionTime(new TriggerContext() {
             @Override
             public Date lastScheduledExecutionTime() {
                 return null;
@@ -82,9 +78,6 @@ public class TaskMeta implements Serializable {
                 return lastCompletionTime;
             }
         });
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        nextScheduleTime = sdf.format(date);
-        return nextScheduleTime;
     }
 
     public TaskPiece getTaskPiece() {
