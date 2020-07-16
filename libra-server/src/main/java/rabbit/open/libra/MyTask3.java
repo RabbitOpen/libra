@@ -1,5 +1,6 @@
 package rabbit.open.libra;
 
+import org.springframework.stereotype.Component;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.task.DistributedTask;
 

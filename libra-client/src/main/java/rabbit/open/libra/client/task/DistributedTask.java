@@ -31,6 +31,10 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
     private Semaphore taskSemaphore;
 
+    private Semaphore quitSemaphore = new Semaphore(0);
+
+    private boolean run = true;
+
     /**
      * 初始化任务线程
      * @author  xiaoqianbin
@@ -84,12 +88,12 @@ public abstract class DistributedTask extends AbstractLibraTask {
             task.run();
             taskSemaphore.release();
             // 新增运行完成的分片节点
+            logger.info("task[{}/{}] is finished", task.getPath(), task.getNode().substring(RUNNING_TASK_PREFIX.length()));
             getRegistryHelper().createPersistNode(task.getPath() + PS + task.getNode().substring(RUNNING_TASK_PREFIX.length()));
             // 删除运行中的分片节点
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
             String[] split = task.getPath().split(PS);
             Map<Boolean, List<String>> executeInfo = getExecuteInfo(split[split.length - 1]);
-            logger.info("task[{}/{}] is finished", task.getPath(), task.getNode().substring(RUNNING_TASK_PREFIX.length()));
             if (executeInfo.containsKey(false) && executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
             }
@@ -99,12 +103,15 @@ public abstract class DistributedTask extends AbstractLibraTask {
             // 任务出现异常 删除运行中的分片节点 （推进重试）
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
         }
-        tryAcquireTask();
+        if (!quitSemaphore.tryAcquire()) {
+        }
+            tryAcquireTask();
     }
 
     @Override
     protected void close() {
-
+        run = false;
+        quitSemaphore.release();
     }
 
     @Override
@@ -115,8 +122,10 @@ public abstract class DistributedTask extends AbstractLibraTask {
         registerTaskExecutionNode(taskNodePath);
         // 监听任务发布信息
         getRegistryHelper().getClient().subscribeChildChanges(taskNodePath, (path, list) -> {
-            logger.info("task [{} - {}] is published", getTaskName(), list);
-            tryAcquireTask();
+            if (!CollectionUtils.isEmpty(list)) {
+                list.sort(String::compareTo);
+                tryAcquireTask();
+            }
         });
         tryAcquireTask();
     }

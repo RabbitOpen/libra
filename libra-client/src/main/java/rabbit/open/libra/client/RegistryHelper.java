@@ -5,6 +5,7 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import rabbit.open.libra.client.exception.LibraException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -94,13 +95,13 @@ public class RegistryHelper {
                 continue;
             }
             path = path + "/" + node;
-            if (client.exists(path)) {
-                continue;
-            }
             try {
+                if (client.exists(path)) {
+                    continue;
+                }
                 client.create(path, data, CreateMode.PERSISTENT);
             } catch (Exception e) {
-                // TO DO: ignore all
+                throw new LibraException(String.format("createPersistNode[%s] error, %s", fullPath, e.getMessage()));
             }
         }
     }
@@ -116,21 +117,6 @@ public class RegistryHelper {
             replaceNode("/executors/" + executorName, null, CreateMode.EPHEMERAL);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 创建executor目录
-     * @param   nodePath
-     * @author  xiaoqianbin
-     * @date    2020/7/11
-     **/
-    private String createPersistentNode(String nodePath) {
-        try {
-            return createPersistNode(nodePath, null, CreateMode.PERSISTENT);
-        } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
-            return rootPath + nodePath;
         }
     }
 
@@ -171,16 +157,16 @@ public class RegistryHelper {
     public void init() {
         client = new ZkClient(hosts);
         createRootPath();
-        createPersistentNode("/executors");
-        createPersistentNode("/tasks");
-        createPersistentNode("/tasks/meta");
-        createPersistentNode(TASKS_META_SCHEDULE);
-        createPersistentNode(TASKS_META_USERS);
-        createPersistentNode("/tasks/execution");
-        createPersistentNode(TASKS_EXECUTION_USERS);
-        createPersistentNode(TASKS_EXECUTION_SCHEDULE);
+        createPersistNode(getRootPath()+ "/executors");
+        createPersistNode(getRootPath()+ "/tasks");
+        createPersistNode(getRootPath()+ "/tasks/meta");
+        createPersistNode(getRootPath()+ TASKS_META_SCHEDULE);
+        createPersistNode(getRootPath()+ TASKS_META_USERS);
+        createPersistNode(getRootPath()+ "/tasks/execution");
+        createPersistNode(getRootPath()+ TASKS_EXECUTION_USERS);
+        createPersistNode(getRootPath()+ TASKS_EXECUTION_SCHEDULE);
         // 处于执行中的任务
-        createPersistentNode(TASKS_EXECUTION_RUNNING);
+        createPersistNode(getRootPath()+ TASKS_EXECUTION_RUNNING);
         registerExecutor();
     }
 

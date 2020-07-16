@@ -25,7 +25,7 @@ public class MyTask extends DistributedTask {
     public void execute(int index, int splits, String taskScheduleTime) {
         logger.info("{}-->{}-{} is executed at {} ", getTaskGroup(), getTaskName(), index, taskScheduleTime);
         try {
-            Thread.sleep(5000);
+            Thread.sleep(2000);
         } catch (Exception e) {
         }
 
@@ -53,6 +53,6 @@ public class MyTask extends DistributedTask {
 
     @Override
     protected String getCronExpression() {
-        return "0/10 * * * * *";
+        return "0/1 * * * * *";
     }
 }
