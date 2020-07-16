@@ -60,7 +60,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private Map<String, Map<String, List<TaskMeta>>> taskMetaMap = new ConcurrentHashMap<>();
+    protected Map<String, Map<String, List<TaskMeta>>> taskMetaMap = new ConcurrentHashMap<>();
 
     /**
      * 节点监听器列表
