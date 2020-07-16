@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.CollectionUtils;
+import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.net.InetAddress;
@@ -35,19 +36,19 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
     public static final String PS = "/";
 
     /**
-     * 任务缓存
-     * @author xiaoqianbin
-     * @date 2020/7/11
+     * 任务缓存, 一级key是appName，二级key是group name，
      **/
-    private static Map<String, List<TaskMeta>> taskMap = new ConcurrentHashMap<>();
+    private static Map<String, Map<String, List<TaskMeta>>> taskMetaCache = new ConcurrentHashMap<>();
 
-    // 任务运行状态
+    /**
+     * 任务运行状态
+     **/
     private static boolean executeStatus = false;
 
     /**
      * 是否是系统任务
-     * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     protected boolean isSystemTask() {
         return false;
@@ -63,21 +64,34 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
     @Override
     public void afterPropertiesSet() throws Exception {
         register(this);
+        registerTaskMeta();
+    }
+
+    /**
+     * 注册任务源信息
+     * @author xiaoqianbin
+     * @date 2020/7/16
+     **/
+    protected void registerTaskMeta() {
         getRegistryHelper().registerTaskMeta(getAppName() + PS + getTaskName(), new TaskMeta(this), isSystemTask());
     }
 
     /**
      * 完成任务信息注册工作
-     * @param    task
+     * @param task
      * @author xiaoqianbin
      * @date 2020/7/11
      **/
     private synchronized static void register(AbstractLibraTask task) {
-        if (!taskMap.containsKey(task.getTaskGroup())) {
-            taskMap.put(task.getTaskGroup(), new ArrayList<>());
+        if (!taskMetaCache.containsKey(task.getAppName())) {
+            taskMetaCache.put(task.getAppName(), new ConcurrentHashMap<>(64));
         }
-        taskMap.get(task.getTaskGroup()).add(new TaskMeta(task));
-        taskMap.get(task.getTaskGroup()).sort(Comparator.comparingInt(TaskMeta::getExecuteOrder).thenComparing(TaskMeta::getTaskName));
+        Map<String, List<TaskMeta>> appMap = taskMetaCache.get(task.getAppName());
+        if (!appMap.containsKey(task.getTaskGroup())) {
+            appMap.put(task.getTaskGroup(), new ArrayList<>());
+        }
+        appMap.get(task.getTaskGroup()).add(new TaskMeta(task));
+        appMap.get(task.getTaskGroup()).sort(Comparator.comparingInt(TaskMeta::getExecuteOrder).thenComparing(TaskMeta::getTaskName));
     }
 
     /**
@@ -85,8 +99,8 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @author xiaoqianbin
      * @date 2020/7/11
      **/
-    public static Map<String, List<TaskMeta>> getTaskMap() {
-        return taskMap;
+    public static Map<String, List<TaskMeta>> getTaskMetaCache(String appName) {
+        return taskMetaCache.get(appName);
     }
 
     /**
@@ -94,15 +108,19 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @author xiaoqianbin
      * @date 2020/7/11
      **/
-    public synchronized static void runSystemTasks() {
+    public synchronized static void runScheduleTasks() {
         if (executeStatus) {
             return;
         }
         executeStatus = true;
         refreshMeta();
-        List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.SCHEDULE_GROUP);
-        if (!CollectionUtils.isEmpty(systemTasks)) {
-            systemTasks.forEach(t -> {
+        Map<String, List<TaskMeta>> appMap = getTaskMetaCache(DEFAULT_APP);
+        if (appMap.isEmpty()) {
+            throw new LibraException("default-app is not existed!");
+        }
+        List<TaskMeta> scheduleTasks = appMap.get(SchedulerTask.SCHEDULE_GROUP);
+        if (!CollectionUtils.isEmpty(scheduleTasks)) {
+            scheduleTasks.forEach(t -> {
                 t.getTaskPiece().execute(0, 1, null);
             });
         }
@@ -110,19 +128,36 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
 
     /**
      * 刷新meta信息, 移除多余的meta节点信息
-     * @author  xiaoqianbin
-     * @date    2020/7/15
+     * @author xiaoqianbin
+     * @date 2020/7/15
      **/
     private static void refreshMeta() {
-        Map<String, List<TaskMeta>> map = getTaskMap();
+        if (taskMetaCache.isEmpty()) {
+            return;
+        }
+        Map<String, List<TaskMeta>> map = taskMetaCache.values().iterator().next();
         if (map.isEmpty()) {
             return;
         }
         AbstractLibraTask task = (AbstractLibraTask) map.values().iterator().next().get(0).getTaskPiece();
         RegistryHelper helper = task.getRegistryHelper();
-        List<String> children = helper.getChildren(RegistryHelper.TASKS_META_USERS);
-        for (String child : children) {
+        for (String app : taskMetaCache.keySet()) {
+            refreshMetaByApp(helper, app);
+        }
+    }
+
+    /**
+     * 按app 刷新meta信息
+     * @param    helper
+     * @param    app
+     * @author xiaoqianbin
+     * @date 2020/7/16
+     **/
+    private static void refreshMetaByApp(RegistryHelper helper, String app) {
+        List<String> tasks = helper.getChildren(RegistryHelper.TASKS_META_USERS + PS + app);
+        for (String child : tasks) {
             boolean exists = false;
+            Map<String, List<TaskMeta>> map = taskMetaCache.get(app);
             for (List<TaskMeta> metas : map.values()) {
                 for (TaskMeta meta : metas) {
                     if (meta.getTaskName().equals(child)) {
@@ -135,7 +170,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
                 }
             }
             if (!exists) {
-                helper.delete(RegistryHelper.TASKS_META_USERS + PS + child);
+                helper.delete(RegistryHelper.TASKS_META_USERS + PS + app + PS + child);
             }
         }
     }
@@ -147,31 +182,53 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      **/
     public synchronized static void shutdown() {
         // 关闭调度任务
-        List<TaskMeta> systemTasks = getTaskMap().get(SchedulerTask.SCHEDULE_GROUP);
-        if (!CollectionUtils.isEmpty(systemTasks)) {
-            systemTasks.forEach(t -> {
-                t.getTaskPiece().close();
-            });
-        }
+        closeScheduleTasks();
 
         // 关闭普通任务
-        Map<String, List<TaskMeta>> taskMap = getTaskMap();
-        for (Map.Entry<String, List<TaskMeta>> entry : taskMap.entrySet()) {
-            List<TaskMeta> tasks = entry.getValue();
-            if (CollectionUtils.isEmpty(tasks)) {
-                continue;
-            }
-            for (TaskMeta task : tasks) {
-                closeTask(task);
+        closeUserTasks();
+    }
+
+    /**
+     * 关闭普通任务
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    private static void closeUserTasks() {
+        for (Map<String, List<TaskMeta>> map : taskMetaCache.values()) {
+            for (Map.Entry<String, List<TaskMeta>> entry : map.entrySet()) {
+                if (SchedulerTask.SCHEDULE_GROUP.equals(entry.getKey())) {
+                    continue;
+                }
+                List<TaskMeta> tasks = entry.getValue();
+                if (CollectionUtils.isEmpty(tasks)) {
+                    continue;
+                }
+                for (TaskMeta task : tasks) {
+                    closeTask(task);
+                }
             }
         }
     }
 
     /**
-     * 安全退出任务
-     * @param	task
+     * 关闭调度任务
      * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @date    2020/7/16
+     **/
+    private static void closeScheduleTasks() {
+        List<TaskMeta> scheduleTasks = getTaskMetaCache(DEFAULT_APP).get(SchedulerTask.SCHEDULE_GROUP);
+        if (!CollectionUtils.isEmpty(scheduleTasks)) {
+            scheduleTasks.forEach(t -> {
+                t.getTaskPiece().close();
+            });
+        }
+    }
+
+    /**
+     * 安全退出任务
+     * @param    task
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     private static void closeTask(TaskMeta task) {
         if (SchedulerTask.SCHEDULE_GROUP.equals(task.getTaskPiece().getTaskGroup())) {
@@ -193,8 +250,8 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
 
     /**
      * 获取主节点名
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     protected String getLeaderName() {
         return getHostName();
@@ -202,8 +259,8 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
 
     /**
      * 获取当前主机名
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     protected String getHostName() {
         try {

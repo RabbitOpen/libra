@@ -45,4 +45,9 @@ public class MyTask4 extends DistributedTask {
     protected String getCronExpression() {
         return "0/10 * * * * *";
     }
+
+    @Override
+    protected String getAppName() {
+        return "demo-app";
+    }
 }

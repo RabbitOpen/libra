@@ -7,6 +7,8 @@ package rabbit.open.libra.client;
  **/
 public abstract class TaskPiece {
 
+    public static final String DEFAULT_APP = "default-app";
+
     /**
      * 任务组 SYSTEM 任务组的任务一旦注册就会被自动启动
      * @author  xiaoqianbin
@@ -82,6 +84,6 @@ public abstract class TaskPiece {
      * @date    2020/7/16
      **/
     protected String getAppName() {
-        return "LIBRA-APP";
+        return DEFAULT_APP;
     };
 }

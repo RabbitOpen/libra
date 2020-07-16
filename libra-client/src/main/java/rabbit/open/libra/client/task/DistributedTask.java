@@ -147,7 +147,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
     @Override
     public void afterPropertiesSet() throws Exception {
         super.afterPropertiesSet();
-        taskNodePath = RegistryHelper.TASKS_EXECUTION_USERS + PS + getTaskName();
+        taskNodePath = RegistryHelper.TASKS_EXECUTION_USERS + PS + getAppName() + PS + getTaskName();
         registerTaskExecutionNode(taskNodePath);
         // 监听任务发布信息
         getRegistryHelper().subscribeChildChanges(taskNodePath, (path, list) -> {
@@ -270,10 +270,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @date    2020/7/13
      **/
     private void registerTaskExecutionNode(String nodePath) {
-        try {
-            getRegistryHelper().create(nodePath, null, CreateMode.PERSISTENT);
-        } catch (Exception e) {
-            // TO DO: ignore
-        }
+        getRegistryHelper().createPersistNode(nodePath, true);
     }
 }
