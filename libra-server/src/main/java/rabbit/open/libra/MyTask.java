@@ -42,17 +42,12 @@ public class MyTask extends DistributedTask {
     }
 
     @Override
-    protected void close() {
-
-    }
-
-    @Override
     protected Integer getExecuteOrder() {
         return 0;
     }
 
     @Override
     protected String getCronExpression() {
-        return "0/1 * * * * *";
+        return "0/5 * * * * *";
     }
 }

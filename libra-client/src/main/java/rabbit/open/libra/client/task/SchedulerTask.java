@@ -288,11 +288,13 @@ public class SchedulerTask extends AbstractLibraTask {
             RegistryHelper helper = getRegistryHelper();
             String groupRunningPath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
             String schedule = sdf.format(nextScheduleTime);
+            //创建进度信息
+            helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
+            logger.info("task group[{}] is scheduled at [{}]", group, schedule);
             String executePath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + schedule;
+            // 创建执行信息
             helper.createPersistNode(executePath);
             groupScheduleMap.remove(group);
-            logger.info("task group[{}] is scheduled at [{}]", group, schedule);
-            helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
             addExecutionListener(group, taskName, schedule);
         }
     }
@@ -382,16 +384,16 @@ public class SchedulerTask extends AbstractLibraTask {
         List<String> scheduleGroups = helper.getClient().getChildren(scheduleTaskPath);
         scheduleGroups.sort(String::compareTo);
         for (String group : scheduleGroups) {
-            List<String> scheduleTasks = getRegistryHelper().getClient().getChildren(scheduleTaskPath + PS + group);
-            if (scheduleTasks.isEmpty()) {
+            List<String> unfinishedTasks = getRegistryHelper().getClient().getChildren(scheduleTaskPath + PS + group);
+            if (unfinishedTasks.isEmpty()) {
                 continue;
             }
-            scheduleTasks.sort(String::compareTo);
-            // 移除 "/libra/root/tasks/execution/running/{groupName}/{taskName}" 下的脏数据
-            removeDirtyRegistryInformation(scheduleTaskPath, group, scheduleTasks);
+            unfinishedTasks.sort(String::compareTo);
+            // 移除 "/libra/root/tasks/execution/running/{groupName}/{scheduleTime}" 下的脏数据
+            removeDirtyRegistryInformation(scheduleTaskPath, group, unfinishedTasks);
 
             // 注册 "/libra/root/tasks/execution/users/{taskName}/{scheduleTime}" 的监听器
-            registerTaskExecutionListener(scheduleTaskPath, group, scheduleTasks);
+            registerTaskExecutionListener(scheduleTaskPath, group, unfinishedTasks);
         }
     }
 
@@ -399,16 +401,19 @@ public class SchedulerTask extends AbstractLibraTask {
      * 注册任务执行情况监听器
      * @param scheduleTaskPath
      * @param group
-     * @param scheduleTasks
+     * @param scheduleTimes
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private void registerTaskExecutionListener(String scheduleTaskPath, String group, List<String> scheduleTasks) {
-        String scheduleTime = scheduleTasks.get(scheduleTasks.size() - 1);
-        String path = scheduleTaskPath + PS + group + PS + scheduleTime;
-        // 一个任务可能有多个调度在执行
-        List<String> tasks = getRegistryHelper().getClient().getChildren(path);
-        for (String taskName : tasks) {
+    private void registerTaskExecutionListener(String scheduleTaskPath, String group, List<String> scheduleTimes) {
+        for (String scheduleTime : scheduleTimes) {
+            String path = scheduleTaskPath + PS + group + PS + scheduleTime;
+            // 一个任务可能有多个调度在执行
+            List<String> tasks = getRegistryHelper().getClient().getChildren(path);
+            if (CollectionUtils.isEmpty(tasks)) {
+                continue;
+            }
+            String taskName = tasks.get(0);
             String execPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
             if (!getRegistryHelper().getClient().exists(execPath)) {
                 // schedule节点中有数据，运行节点没数据
@@ -555,16 +560,51 @@ public class SchedulerTask extends AbstractLibraTask {
      * 移除多余的注册信息（意外终止可能来不及清理的执行信息）
      * @param runningTaskPath
      * @param group
-     * @param scheduleTasks
+     * @param unfinishedTasks
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private void removeDirtyRegistryInformation(String runningTaskPath, String group, List<String> scheduleTasks) {
-        if (scheduleTasks.size() > 1) {
-            for (int i = 0; i < scheduleTasks.size() - 1; i++) {
-                getRegistryHelper().getClient().delete(runningTaskPath + PS + group + PS + scheduleTasks.get(i));
+    private void removeDirtyRegistryInformation(String runningTaskPath, String group, List<String> unfinishedTasks) {
+        for (int i = 0; i < unfinishedTasks.size(); i++) {
+            String path = runningTaskPath + PS + group + PS + unfinishedTasks.get(i);
+            List<String> children = getRegistryHelper().getClient().getChildren(path);
+            if (CollectionUtils.isEmpty(children)) {
+                continue;
+            }
+            String latestTask = getLatestTask(children, taskMetaMap.get(group));
+            for (int j = 0; j < children.size(); j++) {
+                if (!latestTask.equals(children.get(j))) {
+                    getRegistryHelper().getClient().delete(path + "/" + children.get(j));
+                }
             }
         }
+    }
+
+    /**
+     * 如果有多个任务在执行进度表中，筛选出最后的那个任务（最后那个才是该运行的）
+     * @param	tasks
+	 * @param	metaList
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    protected String getLatestTask(List<String> tasks, List<TaskMeta> metaList) {
+        if (1 == tasks.size()) {
+            return tasks.get(0);
+        }
+        String target = "";
+        int max = 0;
+        for (String task : tasks) {
+            for (int i = 0; i < metaList.size(); i++) {
+                if (task.equals(metaList.get(i).getTaskName())) {
+                    if (i > max) {
+                        max = i;
+                        target = task;
+                    }
+                    break;
+                }
+            }
+        }
+        return target;
     }
 
     @Override

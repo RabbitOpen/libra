@@ -26,10 +26,7 @@ public class MyTask2 extends DistributedTask {
         logger.info("{}-->{}-{} is executed ", getTaskGroup(), getTaskName(), index);
     }
 
-    @Override
-    protected void close() {
 
-    }
 
     @Override
     protected Integer getExecuteOrder() {

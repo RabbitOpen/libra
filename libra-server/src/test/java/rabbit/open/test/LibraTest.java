@@ -7,8 +7,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rabbit.open.libra.MyTask;
+import rabbit.open.libra.MyTask2;
+import rabbit.open.libra.MyTask3;
+import rabbit.open.libra.MyTask4;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.TaskMeta;
+import rabbit.open.libra.client.task.SchedulerTask;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -95,5 +103,37 @@ public class LibraTest {
         helper.deleteNode("/hellowork");
         TestCase.assertTrue(!helper.getClient().exists("/hellowork"));
         helper.destroy();
+    }
+
+    @Test
+    public void selectLastTaskTest() {
+        SchedulerTaskTest st = new SchedulerTaskTest() ;
+
+        List<String> task = new ArrayList<>();
+        task.add("MyTask");
+        List<TaskMeta> metaList = new ArrayList<>();
+        metaList.add(new TaskMeta(new MyTask()));
+        String latestTask = st.getLatestTask(task, metaList);
+        TestCase.assertEquals("MyTask", latestTask);
+
+        task.add("MyTask3");
+        task.add("MyTask4");
+        metaList.add(new TaskMeta(new MyTask()));
+        metaList.add(new TaskMeta(new MyTask2()));
+        metaList.add(new TaskMeta(new MyTask4()));
+        metaList.add(new TaskMeta(new MyTask3()));
+
+        latestTask = st.getLatestTask(task, metaList);
+        TestCase.assertEquals("MyTask3", latestTask);
+
+    }
+
+
+
+    public class SchedulerTaskTest extends SchedulerTask {
+        @Override
+        public String getLatestTask(List<String> tasks, List<TaskMeta> metaList) {
+            return super.getLatestTask(tasks, metaList);
+        }
     }
 }

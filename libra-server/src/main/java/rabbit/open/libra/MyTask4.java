@@ -10,7 +10,7 @@ import javax.annotation.Resource;
  * @author xiaoqianbin
  * @date 2020/7/13
  **/
-//@Component
+@Component
 public class MyTask4 extends DistributedTask {
 
     @Resource
@@ -24,11 +24,6 @@ public class MyTask4 extends DistributedTask {
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
         logger.info("{}-->{}-{} is executed ", getTaskGroup(), getTaskName(), index);
-    }
-
-    @Override
-    protected void close() {
-
     }
 
     @Override

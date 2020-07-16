@@ -4,6 +4,7 @@ import org.apache.zookeeper.CreateMode;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.execution.ExecutableTask;
 import rabbit.open.libra.client.execution.ExecutionMeta;
 
@@ -35,6 +36,8 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
     private boolean run = true;
 
+    private List<Thread> executors = new ArrayList<>();
+
     /**
      * 初始化任务线程
      * @author  xiaoqianbin
@@ -51,7 +54,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
                 @Override
                 public void run() {
-                    while (true) {
+                    while (run) {
                         ExecutableTask task = null;
                         try {
                             task = taskList.poll(3, TimeUnit.SECONDS);
@@ -73,6 +76,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
             }, getTaskName() + "-" + i);
             executor.setDaemon(false);
             executor.start();
+            executors.add(executor);
         };
     }
 
@@ -97,6 +101,9 @@ public abstract class DistributedTask extends AbstractLibraTask {
             if (executeInfo.containsKey(false) && executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
             }
+        } catch (LibraException e) {
+            logger.error(e.getMessage());
+            taskSemaphore.release();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             taskSemaphore.release();
@@ -104,14 +111,22 @@ public abstract class DistributedTask extends AbstractLibraTask {
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
         }
         if (!quitSemaphore.tryAcquire()) {
-        }
             tryAcquireTask();
+        }
     }
 
     @Override
     protected void close() {
         run = false;
         quitSemaphore.release();
+        for (Thread executor : executors) {
+            try {
+                executor.join();
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+            logger.info("executor[{}] closed", executor.getName());
+        }
     }
 
     @Override
@@ -123,7 +138,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
         // 监听任务发布信息
         getRegistryHelper().getClient().subscribeChildChanges(taskNodePath, (path, list) -> {
             if (!CollectionUtils.isEmpty(list)) {
-                list.sort(String::compareTo);
                 tryAcquireTask();
             }
         });
