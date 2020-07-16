@@ -40,16 +40,30 @@ public abstract class DistributedTask extends AbstractLibraTask {
         taskSemaphore = new Semaphore(getParallel());
         taskList = new ArrayBlockingQueue<>(getParallel());
         for (int i = 0; i < getParallel(); i++) {
-            Thread executor = new Thread(() -> {
-                while (true) {
-                    ExecutableTask task = null;
-                    try {
-                        task = taskList.poll(3, TimeUnit.SECONDS);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
-                    }
-                    if (null != task) {
-                        executeUserTask(task);
+            Thread executor = new Thread(new Runnable() {
+
+                // 空转计数器
+                private int counter = 0;
+
+                @Override
+                public void run() {
+                    while (true) {
+                        ExecutableTask task = null;
+                        try {
+                            task = taskList.poll(3, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                        if (null != task) {
+                            executeUserTask(task);
+                            counter = 0;
+                        } else {
+                            counter++;
+                            if (20 == counter) {
+                                counter = 0;
+                                tryAcquireTask();
+                            }
+                        }
                     }
                 }
             }, getTaskName() + "-" + i);
@@ -79,11 +93,13 @@ public abstract class DistributedTask extends AbstractLibraTask {
             if (executeInfo.containsKey(false) && executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
             }
-            tryAcquireTask();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             taskSemaphore.release();
+            // 任务出现异常 删除运行中的分片节点 （推进重试）
+            getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
         }
+        tryAcquireTask();
     }
 
     @Override

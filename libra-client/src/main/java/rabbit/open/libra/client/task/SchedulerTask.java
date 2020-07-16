@@ -390,6 +390,9 @@ public class SchedulerTask extends AbstractLibraTask {
                 getRegistryHelper().createPersistNode(execPath);
             }
             IZkChildListener listener = createExecutionListener(group, taskName, scheduleTime);
+            if (listenerMap.containsKey(execPath)) {
+                getRegistryHelper().getClient().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
+            }
             listenerMap.put(execPath, listener);
             getRegistryHelper().getClient().subscribeChildChanges(execPath, listener);
             // 检测下任务的完成状态，如果完成了，需要更新下执行节点
@@ -429,7 +432,7 @@ public class SchedulerTask extends AbstractLibraTask {
                 // 还有未完成的分片 直接跳过
                 return;
             }
-            getRegistryHelper().getClient().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
+            getRegistryHelper().getClient().unsubscribeChildChanges(execPath, listenerMap.remove(execPath));
             String nextTask = getNextTask(group, taskName);
             String runningRoot = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
             if (null != nextTask) {

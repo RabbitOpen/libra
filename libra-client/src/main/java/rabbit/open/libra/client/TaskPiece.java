@@ -75,4 +75,13 @@ public abstract class TaskPiece {
      * @date    2020/7/13
      **/
     protected abstract String getCronExpression();
+
+    /**
+     * 应用名
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    protected String getAppName() {
+        return "LIBRA-APP";
+    };
 }
