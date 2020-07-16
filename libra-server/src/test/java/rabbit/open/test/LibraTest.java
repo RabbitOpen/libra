@@ -13,6 +13,7 @@ import rabbit.open.libra.MyTask3;
 import rabbit.open.libra.MyTask4;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
+import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.util.ArrayList;
@@ -40,11 +41,11 @@ public class LibraTest {
         RegistryHelper helper = new RegistryHelper();
         helper.init();
         String path = "/hello/li/si/sd";
-        TestCase.assertTrue(!helper.getClient().exists(path));
+        TestCase.assertTrue(!helper.exists(path));
         helper.createPersistNode(path);
-        TestCase.assertTrue(helper.getClient().exists(path));
+        TestCase.assertTrue(helper.exists(path));
         helper.deleteNode("/hello");
-        TestCase.assertTrue(!helper.getClient().exists(path));
+        TestCase.assertTrue(!helper.exists(path));
         helper.destroy();
     }
 
@@ -67,12 +68,12 @@ public class LibraTest {
             logger.info("child changed {}", count);
             semaphore.release();
         };
-        helper.getClient().subscribeChildChanges("/event", listener);
+        helper.subscribeChildChanges("/event", listener);
         helper.createPersistNode("/event/1");
         helper.createPersistNode("/event/2");
         semaphore.acquire(2);
         TestCase.assertEquals(2, count);
-        helper.getClient().unsubscribeChildChanges("/event", listener);
+        helper.unsubscribeChildChanges("/event", listener);
         helper.createPersistNode("/event/3");
         semaphore.tryAcquire(3, TimeUnit.SECONDS);
         TestCase.assertEquals(2, count);
@@ -93,15 +94,19 @@ public class LibraTest {
         CountDownLatch cdl = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             new Thread(() -> {
-                helper.createPersistNode("/hellowork/" + Thread.currentThread().getName());
+                try {
+                    helper.createPersistNode("/hellowork/" + Thread.currentThread().getName(), true);
+                } catch (LibraException e) {
+
+                }
                 logger.info("node 【/hellowork/{}】 created！ ", Thread.currentThread().getName());
                 cdl.countDown();
             }).start();
         }
         cdl.await();
-        TestCase.assertTrue(helper.getClient().getChildren("/hellowork").size() == count);
+        TestCase.assertTrue(helper.getChildren("/hellowork").size() == count);
         helper.deleteNode("/hellowork");
-        TestCase.assertTrue(!helper.getClient().exists("/hellowork"));
+        TestCase.assertTrue(!helper.exists("/hellowork"));
         helper.destroy();
     }
 

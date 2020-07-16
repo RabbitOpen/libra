@@ -63,7 +63,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
     @Override
     public void afterPropertiesSet() throws Exception {
         register(this);
-        getRegistryHelper().registerTaskMeta(getTaskName(), new TaskMeta(this), isSystemTask());
+        getRegistryHelper().registerTaskMeta(getAppName() + PS + getTaskName(), new TaskMeta(this), isSystemTask());
     }
 
     /**
@@ -120,8 +120,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
         }
         AbstractLibraTask task = (AbstractLibraTask) map.values().iterator().next().get(0).getTaskPiece();
         RegistryHelper helper = task.getRegistryHelper();
-        String metaPath = helper.getRootPath() + RegistryHelper.TASKS_META_USERS;
-        List<String> children = helper.getClient().getChildren(metaPath);
+        List<String> children = helper.getChildren(RegistryHelper.TASKS_META_USERS);
         for (String child : children) {
             boolean exists = false;
             for (List<TaskMeta> metas : map.values()) {
@@ -136,7 +135,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
                 }
             }
             if (!exists) {
-                helper.getClient().delete(metaPath + PS + child);
+                helper.delete(RegistryHelper.TASKS_META_USERS + PS + child);
             }
         }
     }
@@ -224,7 +223,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      **/
     protected boolean try2AcquireControl(String path, Object data, CreateMode mode) {
         try {
-            getRegistryHelper().getClient().create(path, data, mode);
+            getRegistryHelper().create(path, data, mode);
             return true;
         } catch (Exception e) {
             return false;

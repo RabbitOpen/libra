@@ -2,7 +2,6 @@ package rabbit.open.libra.client.task;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -104,18 +103,17 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
-        ZkClient zkClient = getRegistryHelper().getClient();
-        String scheduleNode = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_SCHEDULE;
-        String schedulePath = scheduleNode + PS + getTaskName();
+        RegistryHelper helper = getRegistryHelper();
+        String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
         // 注册网络事件监听
-        registerStateChangeListener(zkClient);
+        registerStateChangeListener();
         // 抢占控制权
-        zkClient.subscribeChildChanges(scheduleNode, (path, list) -> {
+        helper.subscribeChildChanges(RegistryHelper.TASKS_EXECUTION_SCHEDULE, (path, list) -> {
             if (!list.contains(getTaskName())) {
                 logger.info("leader is lost");
                 try2AcquireControl(schedulePath, CreateMode.EPHEMERAL);
             } else {
-                if (getLeaderName().equals(getRegistryHelper().getClient().readData(schedulePath))) {
+                if (getLeaderName().equals(getRegistryHelper().readData(schedulePath))) {
                     leader = true;
                 } else {
                     leader = false;
@@ -154,13 +152,12 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 注册网络事件
-     * @param zkClient
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private void registerStateChangeListener(ZkClient zkClient) {
+    private void registerStateChangeListener() {
 
-        zkClient.subscribeStateChanges(new IZkStateListener() {
+        getRegistryHelper().subscribeStateChanges(new IZkStateListener() {
 
             /**
              * 表示服务是否丢失过
@@ -189,12 +186,11 @@ public class SchedulerTask extends AbstractLibraTask {
                 }
                 // 丢失后重连
                 logger.info("zookeeper server is found");
-                getRegistryHelper().registerExecutor();
-                ZkClient client = getRegistryHelper().getClient();
-                String scheduleNode = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_SCHEDULE;
-                String schedulePath = scheduleNode + PS + getTaskName();
-                if (client.exists(schedulePath)) {
-                    if (getLeaderName().equals(client.readData(schedulePath))) {
+                RegistryHelper helper = getRegistryHelper();
+                helper.registerExecutor();
+                String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
+                if (helper.exists(schedulePath)) {
+                    if (getLeaderName().equals(helper.readData(schedulePath))) {
                         leader = true;
                     }
                 } else {
@@ -256,14 +252,28 @@ public class SchedulerTask extends AbstractLibraTask {
                     if (SCHEDULE_GROUP.equals(entry.getKey())) {
                         continue;
                     }
-                    try2PublishTaskGroup(entry.getValue());
+                    // try2PublishTaskGroup(entry.getValue());
                 }
-                scheduleSemaphore.tryAcquire(3, TimeUnit.SECONDS);
             } catch (Exception e) {
                 logger.info(e.getMessage(), e);
             }
+            waits(3);
         }
         logger.info("scheduler job is stopped!");
+    }
+
+    /**
+     * 等待
+     * @param	seconds
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    private void waits(int seconds) {
+        try {
+            scheduleSemaphore.tryAcquire(seconds, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
     }
 
     /**
@@ -281,17 +291,18 @@ public class SchedulerTask extends AbstractLibraTask {
         String group = groupMetas.get(0).getGroupName();
         Date nextScheduleTime = getNextScheduleTime(groupMetas);
         if (nextScheduleTime.before(new Date())) {
+            //todo 复核一下自己是不是leader
             if (scheduleTooBusy(group)) {
                 logger.warn("group[{}] task is blocked", group);
                 return;
             }
             RegistryHelper helper = getRegistryHelper();
-            String groupRunningPath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
+            String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
             String schedule = sdf.format(nextScheduleTime);
             //创建进度信息
             helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
             logger.info("task group[{}] is scheduled at [{}]", group, schedule);
-            String executePath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + schedule;
+            String executePath = RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + schedule;
             // 创建执行信息
             helper.createPersistNode(executePath);
             groupScheduleMap.remove(group);
@@ -307,9 +318,9 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     private boolean scheduleTooBusy(String group) {
         RegistryHelper helper = getRegistryHelper();
-        String groupRunningPath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
-        if (helper.getClient().exists(groupRunningPath)) {
-            List<String> children = helper.getClient().getChildren(groupRunningPath);
+        String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
+        if (helper.exists(groupRunningPath)) {
+            List<String> children = helper.getChildren(groupRunningPath);
             if (!CollectionUtils.isEmpty(children) && children.size() >= getGroupTaskConcurrence()) {
                 return true;
             }
@@ -329,13 +340,13 @@ public class SchedulerTask extends AbstractLibraTask {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         RegistryHelper helper = getRegistryHelper();
         if (groupScheduleMap.containsKey(group)) {
-            String scheduleTask = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + sdf.format(groupScheduleMap.get(group));
-            if (!helper.getClient().exists(scheduleTask)) {
+            String scheduleTask = RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + sdf.format(groupScheduleMap.get(group));
+            if (!helper.exists(scheduleTask)) {
                 return groupScheduleMap.get(group);
             }
         }
         // 历史schedule
-        List<String> historySchedules = helper.getClient().getChildren(helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName);
+        List<String> historySchedules = helper.getChildren(RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName);
         Date nextScheduleTime;
         if (CollectionUtils.isEmpty(historySchedules)) {
             nextScheduleTime = groupMetas.get(0).getNextScheduleTime(null);
@@ -354,11 +365,11 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     protected void loadTaskMetas() {
         RegistryHelper helper = getRegistryHelper();
-        String taskPath = helper.getRootPath() + RegistryHelper.TASKS_META_USERS;
-        List<String> children = helper.getClient().getChildren(taskPath);
+        String taskPath = RegistryHelper.TASKS_META_USERS;
+        List<String> children = helper.getChildren(taskPath);
         taskMetaMap.clear();
         for (String child : children) {
-            TaskMeta meta = helper.getClient().readData(taskPath + PS + child);
+            TaskMeta meta = helper.readData(taskPath + PS + child);
             if (!taskMetaMap.containsKey(meta.getGroupName())) {
                 taskMetaMap.put(meta.getGroupName(), new ArrayList<>());
             }
@@ -380,11 +391,11 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     protected void recoverUnFinishedTasks() {
         RegistryHelper helper = getRegistryHelper();
-        String scheduleTaskPath = helper.getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING;
-        List<String> scheduleGroups = helper.getClient().getChildren(scheduleTaskPath);
+        String scheduleTaskPath = RegistryHelper.TASKS_EXECUTION_RUNNING;
+        List<String> scheduleGroups = helper.getChildren(scheduleTaskPath);
         scheduleGroups.sort(String::compareTo);
         for (String group : scheduleGroups) {
-            List<String> unfinishedTasks = getRegistryHelper().getClient().getChildren(scheduleTaskPath + PS + group);
+            List<String> unfinishedTasks = getRegistryHelper().getChildren(scheduleTaskPath + PS + group);
             if (unfinishedTasks.isEmpty()) {
                 continue;
             }
@@ -409,13 +420,13 @@ public class SchedulerTask extends AbstractLibraTask {
         for (String scheduleTime : scheduleTimes) {
             String path = scheduleTaskPath + PS + group + PS + scheduleTime;
             // 一个任务可能有多个调度在执行
-            List<String> tasks = getRegistryHelper().getClient().getChildren(path);
+            List<String> tasks = getRegistryHelper().getChildren(path);
             if (CollectionUtils.isEmpty(tasks)) {
                 continue;
             }
             String taskName = tasks.get(0);
-            String execPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
-            if (!getRegistryHelper().getClient().exists(execPath)) {
+            String execPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
+            if (!getRegistryHelper().exists(execPath)) {
                 // schedule节点中有数据，运行节点没数据
                 getRegistryHelper().createPersistNode(execPath);
             }
@@ -434,14 +445,14 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date    2020/7/16
      **/
     private void addExecutionListener(String group, String taskName, String scheduleTime) {
-        String execPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
+        String execPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
         IZkChildListener listener = createExecutionListener(group, taskName, scheduleTime);
         if (listenerMap.containsKey(execPath)) {
             // 防止重复注册
-            getRegistryHelper().getClient().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
+            getRegistryHelper().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
         }
         listenerMap.put(execPath, listener);
-        getRegistryHelper().getClient().subscribeChildChanges(execPath, listener);
+        getRegistryHelper().subscribeChildChanges(execPath, listener);
     }
 
     /**
@@ -467,7 +478,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/14
      **/
     private void checkSchedulingStatus(String group, String taskName, String scheduleTime) {
-        String execPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
+        String execPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + taskName + PS + scheduleTime;
         IZkChildListener taskListener = listenerMap.get(execPath);
         if (null == taskListener) {
             // 最后一个分片触发的两次事件事件很短暂，第一次就就会处理
@@ -477,28 +488,28 @@ public class SchedulerTask extends AbstractLibraTask {
             if (null == listenerMap.get(execPath)) {
                 return;
             }
-            List<String> children = getRegistryHelper().getClient().getChildren(execPath);
+            List<String> children = getRegistryHelper().getChildren(execPath);
             Map<Boolean, List<String>> statusMap = children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
             int splitsCount = taskMetaMap.get(group).stream().filter(t -> t.getTaskName().equals(taskName)).collect(Collectors.toList()).get(0).getSplitsCount();
             if (!statusMap.containsKey(false) || statusMap.get(false).size() != splitsCount) {
                 // 还有未完成的分片 直接跳过
                 return;
             }
-            getRegistryHelper().getClient().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
+            getRegistryHelper().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
             listenerMap.remove(execPath);
             String nextTask = getNextTask(group, taskName);
-            String runningRoot = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
+            String runningRoot = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + group;
             if (null != nextTask) {
                 // 调度分组中的下一个任务
                 getRegistryHelper().createPersistNode(runningRoot + PS + scheduleTime + PS + nextTask);
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
-                String nextExecPath = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS + PS + nextTask + PS + scheduleTime;
+                String nextExecPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + nextTask + PS + scheduleTime;
                 getRegistryHelper().createPersistNode(nextExecPath);
                 logger.info("task [{} - {}] is published", nextTask, scheduleTime);
                 // 注册下个节点的监听事件
                 IZkChildListener listener = createExecutionListener(group, nextTask, scheduleTime);
                 listenerMap.put(nextExecPath, listener);
-                getRegistryHelper().getClient().subscribeChildChanges(nextExecPath, listener);
+                getRegistryHelper().subscribeChildChanges(nextExecPath, listener);
             } else {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 logger.info("task group[{} - {}] is finished", group, scheduleTime);
@@ -534,7 +545,7 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     private void removeLastTaskScheduleInfo(String taskName, String scheduleTime, String runningRoot) {
         getRegistryHelper().deleteNode(runningRoot + PS + scheduleTime + PS + taskName);
-        if (getRegistryHelper().getClient().getChildren(runningRoot + PS + scheduleTime).isEmpty()) {
+        if (getRegistryHelper().getChildren(runningRoot + PS + scheduleTime).isEmpty()) {
             getRegistryHelper().deleteNode(runningRoot + PS + scheduleTime);
         }
     }
@@ -567,14 +578,14 @@ public class SchedulerTask extends AbstractLibraTask {
     private void removeDirtyRegistryInformation(String runningTaskPath, String group, List<String> unfinishedTasks) {
         for (int i = 0; i < unfinishedTasks.size(); i++) {
             String path = runningTaskPath + PS + group + PS + unfinishedTasks.get(i);
-            List<String> children = getRegistryHelper().getClient().getChildren(path);
+            List<String> children = getRegistryHelper().getChildren(path);
             if (CollectionUtils.isEmpty(children)) {
                 continue;
             }
             String latestTask = getLatestTask(children, taskMetaMap.get(group));
             for (int j = 0; j < children.size(); j++) {
                 if (!latestTask.equals(children.get(j))) {
-                    getRegistryHelper().getClient().delete(path + "/" + children.get(j));
+                    getRegistryHelper().delete(path + "/" + children.get(j));
                 }
             }
         }
@@ -621,7 +632,7 @@ public class SchedulerTask extends AbstractLibraTask {
     protected void close() {
         logger.info("scheduler is closing......");
         closed = true;
-        helper.getClient().unsubscribeAll();
+        helper.unsubscribeAll();
         intervalSemaphore.release();
         scheduleSemaphore.release();
     }

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  **/
 public abstract class DistributedTask extends AbstractLibraTask {
 
-    // /libra/root/tasks/execution/users/{getTaskName()}
+    // ｛root path｝/tasks/execution/users/{getTaskName()}
     private String taskNodePath;
 
     // 任务队列
@@ -36,6 +36,11 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
     private boolean run = true;
 
+    /**
+     * 任务执行线程
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
     private List<Thread> executors = new ArrayList<>();
 
     /**
@@ -47,11 +52,17 @@ public abstract class DistributedTask extends AbstractLibraTask {
         taskSemaphore = new Semaphore(getParallel());
         taskList = new ArrayBlockingQueue<>(getParallel());
         for (int i = 0; i < getParallel(); i++) {
-            newExecutor(i);
+            newExecutor(getTaskName() + "-" + i);
         };
     }
 
-    private void newExecutor(int i) {
+    /**
+     * 新建任务执行线程
+     * @param	executorName
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    private void newExecutor(String executorName) {
         Thread executor = new Thread(new Runnable() {
 
             // 空转计数器
@@ -78,7 +89,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
                     }
                 }
             }
-        }, getTaskName() + "-" + i);
+        }, executorName);
         executor.setDaemon(false);
         executor.start();
         executors.add(executor);
@@ -136,11 +147,10 @@ public abstract class DistributedTask extends AbstractLibraTask {
     @Override
     public void afterPropertiesSet() throws Exception {
         super.afterPropertiesSet();
-        String sysNode = getRegistryHelper().getRootPath() + RegistryHelper.TASKS_EXECUTION_USERS;
-        taskNodePath = sysNode + PS + getTaskName();
+        taskNodePath = RegistryHelper.TASKS_EXECUTION_USERS + PS + getTaskName();
         registerTaskExecutionNode(taskNodePath);
         // 监听任务发布信息
-        getRegistryHelper().getClient().subscribeChildChanges(taskNodePath, (path, list) -> {
+        getRegistryHelper().subscribeChildChanges(taskNodePath, (path, list) -> {
             if (!CollectionUtils.isEmpty(list)) {
                 tryAcquireTask();
             }
@@ -158,7 +168,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
             // 节点没有多余的资源，不执行任务
             return;
         }
-        List<String> tasks = getRegistryHelper().getClient().getChildren(taskNodePath);
+        List<String> tasks = getRegistryHelper().getChildren(taskNodePath);
         if (CollectionUtils.isEmpty(tasks)) {
             // 没有处于调度状态的任务，不执行任务
             return;
@@ -195,7 +205,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @date    2020/7/13
      **/
     protected Map<Boolean, List<String>> getExecuteInfo(String task) {
-        List<String> children = getRegistryHelper().getClient().getChildren(taskNodePath + PS + task);
+        List<String> children = getRegistryHelper().getChildren(taskNodePath + PS + task);
         return children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
     }
 
@@ -261,7 +271,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private void registerTaskExecutionNode(String nodePath) {
         try {
-            getRegistryHelper().getClient().create(nodePath, null, CreateMode.PERSISTENT);
+            getRegistryHelper().create(nodePath, null, CreateMode.PERSISTENT);
         } catch (Exception e) {
             // TO DO: ignore
         }
