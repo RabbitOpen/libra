@@ -47,37 +47,41 @@ public abstract class DistributedTask extends AbstractLibraTask {
         taskSemaphore = new Semaphore(getParallel());
         taskList = new ArrayBlockingQueue<>(getParallel());
         for (int i = 0; i < getParallel(); i++) {
-            Thread executor = new Thread(new Runnable() {
+            newExecutor(i);
+        };
+    }
 
-                // 空转计数器
-                private int counter = 0;
+    private void newExecutor(int i) {
+        Thread executor = new Thread(new Runnable() {
 
-                @Override
-                public void run() {
-                    while (run) {
-                        ExecutableTask task = null;
-                        try {
-                            task = taskList.poll(3, TimeUnit.SECONDS);
-                        } catch (Exception e) {
-                            logger.error(e.getMessage(), e);
-                        }
-                        if (null != task) {
-                            executeUserTask(task);
+            // 空转计数器
+            private int counter = 0;
+
+            @Override
+            public void run() {
+                while (run) {
+                    ExecutableTask task = null;
+                    try {
+                        task = taskList.poll(3, TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                    if (null != task) {
+                        executeUserTask(task);
+                        counter = 0;
+                    } else {
+                        counter++;
+                        if (20 == counter) {
                             counter = 0;
-                        } else {
-                            counter++;
-                            if (20 == counter) {
-                                counter = 0;
-                                tryAcquireTask();
-                            }
+                            tryAcquireTask();
                         }
                     }
                 }
-            }, getTaskName() + "-" + i);
-            executor.setDaemon(false);
-            executor.start();
-            executors.add(executor);
-        };
+            }
+        }, getTaskName() + "-" + i);
+        executor.setDaemon(false);
+        executor.start();
+        executors.add(executor);
     }
 
     /**
