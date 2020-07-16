@@ -305,7 +305,13 @@ public class SchedulerTask extends AbstractLibraTask {
         String group = groupMetas.get(0).getGroupName();
         Date nextScheduleTime = getNextScheduleTime(appName, groupMetas);
         if (nextScheduleTime.before(new Date())) {
-            //TODO 复核一下自己是不是leader
+            String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
+            String currentLeader = getRegistryHelper().readData(schedulePath);
+            if (!getLeaderName().equals(currentLeader)) {
+                logger.error("leader is changed! current leader is {}", currentLeader);
+                leader = false;
+                return;
+            }
             if (scheduleTooBusy(appName, group)) {
                 logger.warn("group[{} ---> {}] task is blocked", appName, group);
                 return;
@@ -316,11 +322,29 @@ public class SchedulerTask extends AbstractLibraTask {
             //创建进度信息
             helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
             logger.info("task group[{}] is scheduled at [{}]", group, schedule);
-            String executePath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName + PS + schedule;
+            String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName;
+            String executePath = taskPath + PS + schedule;
             // 创建执行信息
             helper.createPersistNode(executePath);
             groupScheduleMap.remove(group);
             addExecutionListener(group, taskName, schedule, appName);
+            doHistoryClean(taskPath);
+        }
+    }
+
+    /**
+     * 清理历史副本
+     * @param	taskPath
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    private void doHistoryClean(String taskPath) {
+        List<String> historyTasks = helper.getChildren(taskPath);
+        historyTasks.sort(String::compareTo);
+        int total = historyTasks.size();
+        for (int i = 0; i < total - getHistoryReplicationCount(); i++) {
+            String remove = historyTasks.remove(0);
+            helper.deleteNode(taskPath + PS + remove);
         }
     }
 
@@ -537,13 +561,15 @@ public class SchedulerTask extends AbstractLibraTask {
                 // 调度分组中的下一个任务
                 getRegistryHelper().createPersistNode(runningRoot + PS + scheduleTime + PS + nextTask);
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
-                String nextExecPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + nextTask + PS + scheduleTime;
+                String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + nextTask;
+                String nextExecPath = taskPath + PS + scheduleTime;
                 getRegistryHelper().createPersistNode(nextExecPath);
                 logger.info("task [{} - {}] is published", nextTask, scheduleTime);
                 // 注册下个节点的监听事件
                 IZkChildListener listener = createExecutionListener(group, nextTask, scheduleTime, appName);
                 listenerMap.put(nextExecPath, listener);
                 getRegistryHelper().subscribeChildChanges(nextExecPath, listener);
+                doHistoryClean(taskPath);
             } else {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 logger.info("task group[{} - {}] is finished", group, scheduleTime);
