@@ -229,10 +229,24 @@ public class SchedulerTask extends AbstractLibraTask {
     protected void beginSchedule() {
         // 加载任务元信息
         loadTaskMetas();
+        // 打印日志
+        logMeta();
         // 尝试恢复未完成的任务
         recoverUnFinishedTasks();
         // 定时调度未被调度的节点
         doSchedule();
+    }
+
+    /**
+     * 打印meta信息
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    private void logMeta() {
+        // print logs
+        for (Map.Entry<String, Map<String, List<TaskMeta>>> entry : taskMetaMap.entrySet()) {
+            logger.info("found app tasks, app: [{}], tasks: {}", entry.getKey(), entry.getValue());
+        }
     }
 
     /**
@@ -427,10 +441,6 @@ public class SchedulerTask extends AbstractLibraTask {
                 taskMetaMap.get(app).get(meta.getGroupName()).sort(Comparator.comparing(TaskMeta::getExecuteOrder)
                         .thenComparing(TaskMeta::getTaskName));
             }
-        }
-        // print logs
-        for (Map.Entry<String, Map<String, List<TaskMeta>>> entry : taskMetaMap.entrySet()) {
-            logger.info("found app tasks, app: [{}], tasks: {}", entry.getKey(), entry.getValue());
         }
     }
 
