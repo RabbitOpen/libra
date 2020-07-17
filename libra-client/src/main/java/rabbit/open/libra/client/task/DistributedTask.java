@@ -110,8 +110,9 @@ public abstract class DistributedTask extends AbstractLibraTask {
             task.run();
             taskSemaphore.release();
             // 新增运行完成的分片节点
-            logger.info("task[{}/{}] is finished", task.getPath(), task.getNode().substring(RUNNING_TASK_PREFIX.length()));
-            getRegistryHelper().createPersistNode(task.getPath() + PS + task.getNode().substring(RUNNING_TASK_PREFIX.length()));
+            String pieceName = task.getNode().substring(RUNNING_TASK_PREFIX.length());
+            logger.info("task[{}/{}] is finished", task.getPath(), pieceName);
+            getRegistryHelper().createPersistNode(task.getPath() + PS + pieceName);
             // 删除运行中的分片节点
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
             String[] split = task.getPath().split(PS);

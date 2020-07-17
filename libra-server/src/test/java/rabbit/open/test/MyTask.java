@@ -24,11 +24,6 @@ public class MyTask extends DistributedTask {
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
         logger.info("{}-->{}-{} is executed at {} ", getTaskGroup(), getTaskName(), index, taskScheduleTime);
-        try {
-            Thread.sleep(2000);
-        } catch (Exception e) {
-        }
-
     }
 
     @Override

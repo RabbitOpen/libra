@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +57,11 @@ public class SchedulerTask extends AbstractLibraTask {
 
     @Autowired
     private RegistryHelper helper;
+
+    /**
+     * 加载元信息锁
+     **/
+    protected ReentrantLock metaLoadingLock = new ReentrantLock();
 
     /**
      * 任务元信息 key: group名
@@ -253,7 +259,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/15
      **/
-    private void doSchedule() {
+    protected void doSchedule() {
         logger.info("scheduler job is running....");
         while (true) {
             try {
@@ -278,7 +284,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/16
      **/
-    private void publishByApp(String appName, Map<String, List<TaskMeta>> appMeta) throws ParseException {
+    protected void publishByApp(String appName, Map<String, List<TaskMeta>> appMeta) throws ParseException {
         for (Map.Entry<String, List<TaskMeta>> entry : appMeta.entrySet()) {
             if (SCHEDULE_GROUP.equals(entry.getKey())) {
                 continue;
@@ -309,7 +315,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/15
      **/
-    private void try2PublishTaskGroup(String appName, List<TaskMeta> groupMetas) throws ParseException {
+    protected void try2PublishTaskGroup(String appName, List<TaskMeta> groupMetas) throws ParseException {
         if (groupMetas.isEmpty()) {
             return;
         }
@@ -350,7 +356,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author  xiaoqianbin
      * @date    2020/7/16
      **/
-    private void doHistoryClean(String taskPath) {
+    protected void doHistoryClean(String taskPath) {
         List<String> historyTasks = helper.getChildren(taskPath);
         historyTasks.sort(String::compareTo);
         int total = historyTasks.size();
@@ -385,7 +391,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/15
      **/
-    private Date getNextScheduleTime(String appName, List<TaskMeta> groupMetas) throws ParseException {
+    protected Date getNextScheduleTime(String appName, List<TaskMeta> groupMetas) throws ParseException {
         if (!groupScheduleMap.containsKey(appName)) {
             groupScheduleMap.put(appName, new ConcurrentHashMap<>());
         }
@@ -418,25 +424,104 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/13
      **/
     protected void loadTaskMetas() {
-        String appPath = RegistryHelper.TASKS_META_USERS;
-        List<String> apps = helper.getChildren(appPath);
-        taskMetaMap.clear();
-        for (String app : apps) {
-            if (!taskMetaMap.containsKey(app)) {
-                taskMetaMap.put(app, new ConcurrentHashMap<>());
+        metaLoadingLock.lock();
+        try {
+            addAppChangeListener();
+            List<String> apps = helper.getChildren(RegistryHelper.TASKS_META_USERS);
+            Map<String, Map<String, List<TaskMeta>>> appMetaMap = new ConcurrentHashMap<>();
+            for (String app : apps) {
+                appMetaMap.put(app, loadTaskMetaByApp(app));
             }
-            List<String> tasks = helper.getChildren(appPath + PS + app);
-            for (String task : tasks) {
-                TaskMeta meta = helper.readData(appPath + PS + app + PS + task);
-                if (!taskMetaMap.get(app).containsKey(meta.getGroupName())) {
-                    taskMetaMap.get(app).put(meta.getGroupName(), new ArrayList<>());
+            taskMetaMap = appMetaMap;
+        } finally {
+            metaLoadingLock.unlock();
+        }
+    }
+
+    /**
+     * 按应用加载元信息
+	 * @param	appName
+     * @author  xiaoqianbin
+     * @date    2020/7/17
+     **/
+    protected Map<String, List<TaskMeta>> loadTaskMetaByApp(String appName) {
+        String appPath = RegistryHelper.TASKS_META_USERS;
+        Map<String, List<TaskMeta>> metaMap = new ConcurrentHashMap<>(64);
+        List<String> tasks = helper.getChildren(appPath + PS + appName);
+        for (String task : tasks) {
+            TaskMeta meta = helper.readData(appPath + PS + appName + PS + task);
+            if (!metaMap.containsKey(meta.getGroupName())) {
+                metaMap.put(meta.getGroupName(), new ArrayList<>());
+            }
+            metaMap.get(meta.getGroupName()).add(meta);
+            // 排序
+            metaMap.get(meta.getGroupName()).sort(Comparator.comparing(TaskMeta::getExecuteOrder)
+                    .thenComparing(TaskMeta::getTaskName));
+        }
+        return metaMap;
+    }
+
+    /**
+     * 注册app 动态变更事件
+     * @author  xiaoqianbin
+     * @date    2020/7/17
+     **/
+    protected void addAppChangeListener() {
+        if (listenerMap.containsKey(RegistryHelper.TASKS_META_USERS)) {
+            return;
+        }
+        IZkChildListener appChangeListener = (path, list) -> listenApps(list);
+        listenerMap.put(RegistryHelper.TASKS_META_USERS, appChangeListener);
+        helper.subscribeChildChanges(RegistryHelper.TASKS_META_USERS, appChangeListener);
+        List<String> apps = helper.getChildren(RegistryHelper.TASKS_META_USERS);
+        listenApps(apps);
+    }
+
+    /**
+     * 监听app
+     * @param	appList
+     * @author  xiaoqianbin
+     * @date    2020/7/17
+     **/
+    protected void listenApps(List<String> appList) {
+        synchronized (helper) {
+            if (!CollectionUtils.isEmpty(appList)) {
+                for (String app : appList) {
+                    String appPath = RegistryHelper.TASKS_META_USERS + PS + app;
+                    if (listenerMap.containsKey(appPath)) {
+                        continue;
+                    }
+                    addTaskChangeListener(appPath, app);
+                    refreshAppMeta(app);
                 }
-                taskMetaMap.get(app).get(meta.getGroupName()).add(meta);
-                // 排序
-                taskMetaMap.get(app).get(meta.getGroupName()).sort(Comparator.comparing(TaskMeta::getExecuteOrder)
-                        .thenComparing(TaskMeta::getTaskName));
             }
         }
+    }
+
+    /**
+     * 刷新app下的meta
+     * @param	app
+     * @author  xiaoqianbin
+     * @date    2020/7/17
+     **/
+    protected void refreshAppMeta(String app) {
+        synchronized (taskMetaMap) {
+            Map<String, List<TaskMeta>> map = loadTaskMetaByApp(app);
+            taskMetaMap.put(app, map);
+        }
+    }
+
+    /**
+     * 添加app下task变化的监听器
+     * @param	appPath
+     * @param	appName
+     * @author  xiaoqianbin
+     * @date    2020/7/17
+     **/
+    protected void addTaskChangeListener(String appPath, String appName) {
+        IZkChildListener listener = (path, list) -> refreshAppMeta(appName);
+        helper.subscribeChildChanges(appPath, listener);
+        listenerMap.put(appPath, listener);
     }
 
     /**
