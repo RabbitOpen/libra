@@ -7,10 +7,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rabbit.open.libra.MyTask;
-import rabbit.open.libra.MyTask2;
-import rabbit.open.libra.MyTask3;
-import rabbit.open.libra.MyTask4;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
@@ -39,6 +35,8 @@ public class LibraTest {
     @Test
     public void helperTest() {
         RegistryHelper helper = new RegistryHelper();
+        helper.setHosts("localhost:2181");
+        helper.setRootPath("/libra/root");
         helper.init();
         String path = "/hello/li/si/sd";
         TestCase.assertTrue(!helper.exists(path));
@@ -59,6 +57,8 @@ public class LibraTest {
     @Test
     public void eventTest() throws InterruptedException {
         RegistryHelper helper = new RegistryHelper();
+        helper.setHosts("localhost:2181");
+        helper.setRootPath("/libra/root");
         helper.init();
         helper.deleteNode("/event");
         helper.createPersistNode("/event");
@@ -89,6 +89,8 @@ public class LibraTest {
     @Test
     public void multiThreadTest() throws InterruptedException {
         RegistryHelper helper = new RegistryHelper();
+        helper.setHosts("localhost:2181");
+        helper.setRootPath("/libra/root");
         helper.init();
         int count = 20;
         CountDownLatch cdl = new CountDownLatch(count);

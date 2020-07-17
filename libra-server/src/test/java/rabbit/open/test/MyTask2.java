@@ -1,4 +1,4 @@
-package rabbit.open.libra;
+package rabbit.open.test;
 
 import org.springframework.stereotype.Component;
 import rabbit.open.libra.client.RegistryHelper;

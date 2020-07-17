@@ -4,8 +4,6 @@ import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
@@ -27,14 +25,20 @@ import java.util.stream.Collectors;
  **/
 public class SchedulerTask extends AbstractLibraTask {
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
-
     /**
      * 调度组
-     * @author xiaoqianbin
-     * @date 2020/7/15
      **/
-    public final static String SCHEDULE_GROUP = "SYSTEM";
+    public static final String SCHEDULE_GROUP = "SYSTEM";
+
+    /**
+     * 默认并行任务组个数
+     **/
+    public static final int GROUP_TASK_CONCURRENCE = 2;
+
+    /**
+     * 默认保留历史运行状态个数
+     **/
+    public static final int HISTORY_REPLICATION_COUNT = 5;
 
     /**
      * 调度线程
@@ -42,8 +46,6 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/15
      **/
     private Thread schedulerThread;
-
-    private boolean closed = false;
 
     /**
      * leader   节点
@@ -103,12 +105,11 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
-        RegistryHelper helper = getRegistryHelper();
         String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
         // 注册网络事件监听
         registerStateChangeListener();
         // 抢占控制权
-        helper.subscribeChildChanges(RegistryHelper.TASKS_EXECUTION_SCHEDULE, (path, list) -> {
+        getRegistryHelper().subscribeChildChanges(RegistryHelper.TASKS_EXECUTION_SCHEDULE, (path, list) -> {
             if (!list.contains(getTaskName())) {
                 logger.info("leader is lost");
                 try2AcquireControl(schedulePath, CreateMode.EPHEMERAL);
@@ -133,8 +134,7 @@ public class SchedulerTask extends AbstractLibraTask {
         schedulerThread = new Thread(() -> {
             while (true) {
                 try {
-                    intervalSemaphore.tryAcquire(3, TimeUnit.SECONDS);
-                    if (closed) {
+                    if (intervalSemaphore.tryAcquire(3, TimeUnit.SECONDS)) {
                         break;
                     }
                     if (leader) {
@@ -186,7 +186,6 @@ public class SchedulerTask extends AbstractLibraTask {
                 }
                 // 丢失后重连
                 logger.info("zookeeper server is found");
-                RegistryHelper helper = getRegistryHelper();
                 helper.registerExecutor();
                 String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
                 if (helper.exists(schedulePath)) {
@@ -210,13 +209,13 @@ public class SchedulerTask extends AbstractLibraTask {
             }
 
             @Override
-            public void handleNewSession() throws Exception {
-
+            public void handleNewSession() {
+                // TO DO： ignore
             }
 
             @Override
-            public void handleSessionEstablishmentError(Throwable throwable) throws Exception {
-
+            public void handleSessionEstablishmentError(Throwable throwable) {
+                // TO DO： ignore
             }
         });
     }
@@ -258,17 +257,16 @@ public class SchedulerTask extends AbstractLibraTask {
         logger.info("scheduler job is running....");
         while (true) {
             try {
-                if (closed || !leader) {
-                    // 如果leader不是自己
-                    break;
-                }
                 for (Map.Entry<String, Map<String, List<TaskMeta>>> appMeta : taskMetaMap.entrySet()) {
                     publishByApp(appMeta.getKey(), appMeta.getValue());
                 }
             } catch (Exception e) {
                 logger.info(e.getMessage(), e);
             }
-            waits(3);
+            if (!leader || waits(3)) {
+                // 如果leader不是自己, 或者信号唤醒了
+                break;
+            }
         }
         logger.info("scheduler job is stopped!");
     }
@@ -295,11 +293,12 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/16
      **/
-    private void waits(int seconds) {
+    private boolean waits(int seconds) {
         try {
-            scheduleSemaphore.tryAcquire(seconds, TimeUnit.SECONDS);
+            return scheduleSemaphore.tryAcquire(seconds, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.error(e.getMessage());
+            return false;
         }
     }
 
@@ -330,7 +329,6 @@ public class SchedulerTask extends AbstractLibraTask {
                 logger.warn("group[{} ---> {}] task is blocked", appName, group);
                 return;
             }
-            RegistryHelper helper = getRegistryHelper();
             String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
             String schedule = sdf.format(nextScheduleTime);
             //创建进度信息
@@ -370,7 +368,6 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/16
      **/
     private boolean scheduleTooBusy(String appName, String group) {
-        RegistryHelper helper = getRegistryHelper();
         String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
         if (helper.exists(groupRunningPath)) {
             List<String> children = helper.getChildren(groupRunningPath);
@@ -395,7 +392,6 @@ public class SchedulerTask extends AbstractLibraTask {
         String group = groupMetas.get(0).getGroupName();
         String taskName = groupMetas.get(0).getTaskName();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        RegistryHelper helper = getRegistryHelper();
         if (groupScheduleMap.get(appName).containsKey(group)) {
             String scheduleTask = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName + PS
                     + sdf.format(groupScheduleMap.get(appName).get(group));
@@ -422,7 +418,6 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/13
      **/
     protected void loadTaskMetas() {
-        RegistryHelper helper = getRegistryHelper();
         String appPath = RegistryHelper.TASKS_META_USERS;
         List<String> apps = helper.getChildren(appPath);
         taskMetaMap.clear();
@@ -450,7 +445,6 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/13
      **/
     protected void recoverUnFinishedTasks() {
-        RegistryHelper helper = getRegistryHelper();
         String scheduleTaskPath = RegistryHelper.TASKS_EXECUTION_RUNNING;
         List<String> apps = helper.getChildren(scheduleTaskPath);
         for (String app : apps) {
@@ -531,9 +525,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/14
      **/
     private IZkChildListener createExecutionListener(String group, String taskName, String scheduleTime, String appName) {
-        return (nodePath, list) -> {
-            checkSchedulingStatus(group, taskName, scheduleTime, appName);
-        };
+        return (nodePath, list) -> checkSchedulingStatus(group, taskName, scheduleTime, appName);
     }
 
     /**
@@ -593,7 +585,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/16
      **/
     protected int getHistoryReplicationCount() {
-        return 5;
+        return HISTORY_REPLICATION_COUNT;
     }
 
     /**
@@ -602,7 +594,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/16
      **/
     protected int getGroupTaskConcurrence() {
-        return 2;
+        return GROUP_TASK_CONCURRENCE;
     }
 
     /**
@@ -703,10 +695,14 @@ public class SchedulerTask extends AbstractLibraTask {
     @Override
     protected void close() {
         logger.info("scheduler is closing......");
-        closed = true;
         helper.unsubscribeAll();
         intervalSemaphore.release();
         scheduleSemaphore.release();
+        try {
+            schedulerThread.join();
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     /**

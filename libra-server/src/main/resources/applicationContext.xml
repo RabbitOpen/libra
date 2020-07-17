@@ -5,9 +5,13 @@
            http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
 
 
-    <bean id="registryHelper" class="rabbit.open.libra.client.RegistryHelper"></bean>
+    <bean id="registryHelper" class="rabbit.open.libra.client.RegistryHelper">
+        <property name="rootPath" value="/megrez/loan"/>
+        <property name="hosts" value="localhost:2181"/>
+    </bean>
 
     <bean id="schedulerTask" class="rabbit.open.libra.client.task.SchedulerTask"></bean>
+
 </beans>	
 
 

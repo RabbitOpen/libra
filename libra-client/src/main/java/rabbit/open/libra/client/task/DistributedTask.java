@@ -24,7 +24,10 @@ import java.util.stream.Collectors;
  **/
 public abstract class DistributedTask extends AbstractLibraTask {
 
-    // ｛root path｝/tasks/execution/users/{appName}/{getTaskName()}
+    /**
+     * ｛root path｝/tasks/execution/users/{应用名}/{getTaskName}
+     * 节点路径
+     **/
     private String taskNodePath;
 
     // 任务队列
@@ -53,7 +56,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
         taskList = new ArrayBlockingQueue<>(getParallel());
         for (int i = 0; i < getParallel(); i++) {
             newExecutor(getTaskName() + "-" + i);
-        };
+        }
     }
 
     /**
@@ -219,9 +222,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private void addTask(String path, String node, String executeTime) {
         try {
-            taskList.put(new ExecutableTask(() -> {
-                execute(Integer.parseInt(node.substring(RUNNING_TASK_PREFIX.length())), getSplitsCount(), executeTime);
-            }, path, node));
+            taskList.put(new ExecutableTask(() -> execute(Integer.parseInt(node.substring(RUNNING_TASK_PREFIX.length())), getSplitsCount(), executeTime), path, node));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
@@ -249,7 +250,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
     private List<String> getAvailablePieces(Map<Boolean, List<String>> groups) {
         List<String> leftPieces = new ArrayList<>();
         for (int i = 0; i < getSplitsCount(); i++) {
-            leftPieces.add(i + "");
+            leftPieces.add(Integer.toString(i));
         }
         if (groups.containsKey(false)) {
             leftPieces.removeAll(groups.get(false));

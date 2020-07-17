@@ -7,7 +7,30 @@ package rabbit.open.libra.client;
  **/
 public abstract class TaskPiece {
 
+    /**
+     * 默认 app name
+     **/
     public static final String DEFAULT_APP = "default-app";
+
+    /**
+     * 默认分组
+     **/
+    public static final String DEFAULT_GROUP = "DEFAULT";
+
+    /**
+     * 默认执行顺序
+     **/
+    public static final int DEFAULT_EXECUTOR_ORDER = 0;
+
+    /**
+     * 默认分片数
+     **/
+    public static final int DEFAULT_SPLIT_COUNT = 1;
+
+    /**
+     * 默认并发度
+     **/
+    public static final int DEFAULT_PARALLEL = 1;
 
     /**
      * 任务组 SYSTEM 任务组的任务一旦注册就会被自动启动
@@ -15,7 +38,7 @@ public abstract class TaskPiece {
      * @date    2020/7/10
      **/
     protected String getTaskGroup() {
-        return "DEFAULT";
+        return DEFAULT_GROUP;
     }
 
     /**
@@ -33,7 +56,7 @@ public abstract class TaskPiece {
      * @date    2020/7/10
      **/
     protected Integer getExecuteOrder() {
-        return 0;
+        return DEFAULT_EXECUTOR_ORDER;
     }
 
     /**
@@ -42,7 +65,7 @@ public abstract class TaskPiece {
      * @date    2020/7/10
      **/
     protected int getSplitsCount() {
-        return 1;
+        return DEFAULT_SPLIT_COUNT;
     }
 
     /**
@@ -51,7 +74,7 @@ public abstract class TaskPiece {
      * @date    2020/7/10
      **/
     protected int getParallel() {
-        return 1;
+        return DEFAULT_PARALLEL;
     }
 
     /**
@@ -85,5 +108,5 @@ public abstract class TaskPiece {
      **/
     protected String getAppName() {
         return DEFAULT_APP;
-    };
+    }
 }

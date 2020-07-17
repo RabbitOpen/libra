@@ -49,12 +49,12 @@ public class RegistryHelper {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     // zk地址
-    @Value("${zookeeper.hosts.url}")
-    private String hosts = "localhost:2181";
+    @Value("${zookeeper.hosts.url:localhost:2181}")
+    private String hosts;
 
     // 监控根节点
-    @Value("${libra.monitor.root-path}")
-    private String rootPath = "/libra/root";
+    @Value("${libra.monitor.root-path:/libra/root}")
+    private String rootPath;
 
     private ZkClient client;
 
@@ -103,21 +103,20 @@ public class RegistryHelper {
      * @date 2020/7/14
      **/
     private void createPersistNode(String fullPath, Object data, CreateMode mode, boolean ignoreError) {
-        String[] nodes = fullPath.split("/");
-        String path = "";
+        String[] nodes = fullPath.split(AbstractLibraTask.PS);
+        StringBuilder path = new StringBuilder();
         for (String node : nodes) {
-            if ("".equals(node.trim())) {
-                continue;
+            if (!"".equals(node.trim())) {
+                path.append(AbstractLibraTask.PS).append(node);
             }
-            path = path + "/" + node;
             try {
-                if (client.exists(path)) {
+                if ("".equals(node.trim()) || client.exists(path.toString())) {
                     continue;
                 }
-                if (fullPath.equals(path)) {
-                    client.create(path, data, mode);
+                if (fullPath.equals(path.toString())) {
+                    client.create(path.toString(), data, mode);
                 } else {
-                    client.create(path, null, mode);
+                    client.create(path.toString(), null, mode);
                 }
             } catch (Exception e) {
                 if (!ignoreError) {
@@ -322,5 +321,13 @@ public class RegistryHelper {
      **/
     public void unsubscribeAll() {
         client.unsubscribeAll();
+    }
+
+    public void setRootPath(String rootPath) {
+        this.rootPath = rootPath;
+    }
+
+    public void setHosts(String hosts) {
+        this.hosts = hosts;
     }
 }
