@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.CollectionUtils;
-import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.net.InetAddress;
@@ -24,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractLibraTask extends TaskPiece implements InitializingBean {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final Logger TASK_LOGGER = LoggerFactory.getLogger(AbstractLibraTask.class);
 
     /**
      * 正在运行的任务的前缀
@@ -99,7 +100,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @author xiaoqianbin
      * @date 2020/7/11
      **/
-    public static Map<String, List<TaskMeta>> getTaskMetaCache(String appName) {
+    private static Map<String, List<TaskMeta>> getTaskMetaCache(String appName) {
         return taskMetaCache.get(appName);
     }
 
@@ -115,8 +116,9 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
         executeStatus = true;
         refreshMeta();
         Map<String, List<TaskMeta>> appMap = getTaskMetaCache(DEFAULT_APP);
-        if (appMap.isEmpty()) {
-            throw new LibraException("default-app is not existed!");
+        if (CollectionUtils.isEmpty(appMap)) {
+            TASK_LOGGER.warn("default-app is not existed!");
+            return;
         }
         List<TaskMeta> scheduleTasks = appMap.get(SchedulerTask.SCHEDULE_GROUP);
         if (!CollectionUtils.isEmpty(scheduleTasks)) {
@@ -139,6 +141,13 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
         }
         AbstractLibraTask task = (AbstractLibraTask) map.values().iterator().next().get(0).getTaskPiece();
         RegistryHelper helper = task.getRegistryHelper();
+        if (taskMetaCache.containsKey(DEFAULT_APP) && taskMetaCache.get(DEFAULT_APP).containsKey(SchedulerTask.SCHEDULE_GROUP)
+                && 1 == taskMetaCache.get(DEFAULT_APP).size()
+            ) {
+            // 独立部署的模式不做清理工作
+            TASK_LOGGER.info("scheduler is deployed in separate mode");
+            return;
+        }
         for (String app : taskMetaCache.keySet()) {
             refreshMetaByApp(helper, app);
         }
@@ -227,7 +236,11 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @date    2020/7/16
      **/
     private static void closeScheduleTasks() {
-        List<TaskMeta> scheduleTasks = getTaskMetaCache(DEFAULT_APP).get(SchedulerTask.SCHEDULE_GROUP);
+        Map<String, List<TaskMeta>> taskMetaCache = getTaskMetaCache(DEFAULT_APP);
+        if (CollectionUtils.isEmpty(taskMetaCache)) {
+            return;
+        }
+        List<TaskMeta> scheduleTasks = taskMetaCache.get(SchedulerTask.SCHEDULE_GROUP);
         if (!CollectionUtils.isEmpty(scheduleTasks)) {
             scheduleTasks.forEach(t -> t.getTaskPiece().close());
         }

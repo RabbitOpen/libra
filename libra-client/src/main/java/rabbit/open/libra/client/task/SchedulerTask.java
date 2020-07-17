@@ -362,7 +362,11 @@ public class SchedulerTask extends AbstractLibraTask {
         int total = historyTasks.size();
         for (int i = 0; i < total - getHistoryReplicationCount(); i++) {
             String remove = historyTasks.remove(0);
-            helper.deleteNode(taskPath + PS + remove);
+            try {
+                helper.deleteNode(taskPath + PS + remove);
+            } catch (Exception e) {
+                logger.warn(e.getMessage());
+            }
         }
     }
 
@@ -470,11 +474,11 @@ public class SchedulerTask extends AbstractLibraTask {
         if (listenerMap.containsKey(RegistryHelper.TASKS_META_USERS)) {
             return;
         }
-        IZkChildListener appChangeListener = (path, list) -> listenApps(list);
+        IZkChildListener appChangeListener = (path, list) -> appChanged(list);
         listenerMap.put(RegistryHelper.TASKS_META_USERS, appChangeListener);
         helper.subscribeChildChanges(RegistryHelper.TASKS_META_USERS, appChangeListener);
         List<String> apps = helper.getChildren(RegistryHelper.TASKS_META_USERS);
-        listenApps(apps);
+        appChanged(apps);
     }
 
     /**
@@ -483,7 +487,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author  xiaoqianbin
      * @date    2020/7/17
      **/
-    protected void listenApps(List<String> appList) {
+    protected void appChanged(List<String> appList) {
         synchronized (helper) {
             if (!CollectionUtils.isEmpty(appList)) {
                 for (String app : appList) {
@@ -492,8 +496,9 @@ public class SchedulerTask extends AbstractLibraTask {
                         continue;
                     }
                     addTaskChangeListener(appPath, app);
-                    refreshAppMeta(app);
+                    appTaskChanged(app);
                 }
+                logger.info("app changed: current task meta: {}", taskMetaMap);
             }
         }
     }
@@ -504,10 +509,11 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author  xiaoqianbin
      * @date    2020/7/17
      **/
-    protected void refreshAppMeta(String app) {
+    protected void appTaskChanged(String app) {
         synchronized (taskMetaMap) {
             Map<String, List<TaskMeta>> map = loadTaskMetaByApp(app);
             taskMetaMap.put(app, map);
+            logger.info("app task changed: {}", taskMetaMap);
         }
     }
 
@@ -519,7 +525,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date    2020/7/17
      **/
     protected void addTaskChangeListener(String appPath, String appName) {
-        IZkChildListener listener = (path, list) -> refreshAppMeta(appName);
+        IZkChildListener listener = (path, list) -> appTaskChanged(appName);
         helper.subscribeChildChanges(appPath, listener);
         listenerMap.put(appPath, listener);
     }
@@ -706,7 +712,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/14
      **/
     private String getNextTask(String group, String taskName, String appName) {
-        List<TaskMeta> groupTasks = getTaskMetaCache(appName).get(group);
+        List<TaskMeta> groupTasks = taskMetaMap.get(appName).get(group);
         for (int i = 0; i < groupTasks.size(); i++) {
             if (taskName.equals(groupTasks.get(i).getTaskName()) && i != (groupTasks.size() - 1)) {
                 return groupTasks.get(i + 1).getTaskName();
