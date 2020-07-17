@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  **/
 public abstract class DistributedTask extends AbstractLibraTask {
 
-    // ｛root path｝/tasks/execution/users/{getTaskName()}
+    // ｛root path｝/tasks/execution/users/{appName}/{getTaskName()}
     private String taskNodePath;
 
     // 任务队列
