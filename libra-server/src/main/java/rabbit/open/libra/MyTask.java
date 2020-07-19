@@ -1,4 +1,4 @@
-package rabbit.open.test;
+package rabbit.open.libra;
 
 import org.springframework.stereotype.Component;
 import rabbit.open.libra.client.RegistryHelper;
@@ -11,7 +11,7 @@ import javax.annotation.Resource;
  * @date 2020/7/13
  **/
 @Component
-public class MyTask2 extends DistributedTask {
+public class MyTask extends DistributedTask {
 
     @Resource
     RegistryHelper helper;
@@ -23,18 +23,31 @@ public class MyTask2 extends DistributedTask {
 
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
-        logger.info("{}-->{}-{} is executed ", getTaskGroup(), getTaskName(), index);
+        logger.info("{}-->{}-{} is executed at {} ", getTaskGroup(), getTaskName(), index, taskScheduleTime);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
+    @Override
+    protected int getSplitsCount() {
+        return 5;
+    }
 
+    @Override
+    protected int getParallel() {
+        return 2;
+    }
 
     @Override
     protected Integer getExecuteOrder() {
-        return 1;
+        return 0;
     }
 
     @Override
     protected String getCronExpression() {
-        return "0/10 * * * * *";
+        return "0/5 * * * * *";
     }
 }

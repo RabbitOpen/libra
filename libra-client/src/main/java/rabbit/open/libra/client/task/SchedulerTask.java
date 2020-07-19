@@ -403,6 +403,7 @@ public class SchedulerTask extends AbstractLibraTask {
         String taskName = groupMetas.get(0).getTaskName();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         if (groupScheduleMap.get(appName).containsKey(group)) {
+            // 下次任务的执行时间已经生成了，但是还没有到调度期
             String scheduleTask = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName + PS
                     + sdf.format(groupScheduleMap.get(appName).get(group));
             if (!helper.exists(scheduleTask)) {
