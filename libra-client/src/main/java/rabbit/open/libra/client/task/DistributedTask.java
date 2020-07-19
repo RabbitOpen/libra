@@ -37,7 +37,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
     private Semaphore quitSemaphore = new Semaphore(0);
 
-    private boolean run = true;
+    protected boolean run = true;
 
     /**
      * 任务执行线程
@@ -73,13 +73,8 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
             @Override
             public void run() {
-                while (run) {
-                    ExecutableTask task = null;
-                    try {
-                        task = taskList.poll(3, TimeUnit.SECONDS);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
-                    }
+                while (!isClosed()) {
+                    ExecutableTask task = getExecutableTask();
                     if (null != task) {
                         executeUserTask(task);
                         counter = 0;
@@ -90,6 +85,20 @@ public abstract class DistributedTask extends AbstractLibraTask {
                             tryAcquireTask();
                         }
                     }
+                }
+            }
+
+            /**
+             * 获取任务
+             * @author  xiaoqianbin
+             * @date    2020/7/19
+             **/
+            private ExecutableTask getExecutableTask() {
+                try {
+                    return taskList.poll(3, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    logger.warn("task[{}] is interrupted", getTaskName());
+                    return null;
                 }
             }
         }, executorName);
@@ -107,8 +116,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
     private void executeUserTask(ExecutableTask task) {
         try {
             logger.info("executing task [{} - {}]", task.getPath(), task.getNode());
-            task.run();
-            taskSemaphore.release();
+            executeTask(task);
             // 新增运行完成的分片节点
             String pieceName = task.getNode().substring(RUNNING_TASK_PREFIX.length());
             logger.info("task[{}/{}] is finished", task.getPath(), pieceName);
@@ -122,10 +130,8 @@ public abstract class DistributedTask extends AbstractLibraTask {
             }
         } catch (LibraException e) {
             logger.error(e.getMessage());
-            taskSemaphore.release();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            taskSemaphore.release();
             // 任务出现异常 删除运行中的分片节点 （推进重试）
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
         }
@@ -134,12 +140,36 @@ public abstract class DistributedTask extends AbstractLibraTask {
         }
     }
 
+    /**
+     * 执行任务
+     * @param	task
+     * @author  xiaoqianbin
+     * @date    2020/7/19
+     **/
+    private void executeTask(ExecutableTask task) {
+        try {
+            task.run();
+        } finally {
+            taskSemaphore.release();
+        }
+    }
+
+    /**
+     * 判断任务是否已经关闭
+     * @author  xiaoqianbin
+     * @date    2020/7/19
+     **/
+    protected boolean isClosed() {
+        return !run;
+    }
+
     @Override
     protected void close() {
         run = false;
-        quitSemaphore.release();
+        quitSemaphore.release(getParallel());
         for (Thread executor : executors) {
             try {
+                executor.interrupt();
                 executor.join();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);

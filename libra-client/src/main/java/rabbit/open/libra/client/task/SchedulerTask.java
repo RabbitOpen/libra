@@ -343,7 +343,9 @@ public class SchedulerTask extends AbstractLibraTask {
             String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName;
             String executePath = taskPath + PS + schedule;
             // 创建执行信息
+            prePublish(appName, group, taskName, schedule);
             helper.createPersistNode(executePath);
+            prePublish(appName, group, taskName, schedule);
             groupScheduleMap.remove(group);
             addExecutionListener(group, taskName, schedule, appName);
             doHistoryClean(taskPath);
@@ -579,12 +581,40 @@ public class SchedulerTask extends AbstractLibraTask {
             String execPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName + PS + scheduleTime;
             if (!getRegistryHelper().exists(execPath)) {
                 // schedule节点中有数据，运行节点没数据
+                prePublish(appName, group, taskName, scheduleTime);
                 getRegistryHelper().createPersistNode(execPath);
+                postPublish(appName, group, taskName, scheduleTime);
             }
             addExecutionListener(group, taskName, scheduleTime, appName);
             // 检测下任务的完成状态，如果完成了，需要更新下执行节点
             checkSchedulingStatus(group, taskName, scheduleTime, appName);
         }
+    }
+
+    /**
+     * 发布任务前
+     * @param	appName
+	 * @param	group
+	 * @param	taskName
+	 * @param	scheduleTime
+     * @author  xiaoqianbin
+     * @date    2020/7/19
+     **/
+    protected void prePublish(String appName, String group, String taskName, String scheduleTime) {
+        // TO DO: record this publish
+    }
+
+    /**
+     * 发布任务后
+     * @param	appName
+     * @param	group
+     * @param	taskName
+     * @param	scheduleTime
+     * @author  xiaoqianbin
+     * @date    2020/7/19
+     **/
+    protected void postPublish(String appName, String group, String taskName, String scheduleTime) {
+        // TO DO: record this publish
     }
 
     /**
@@ -657,7 +687,9 @@ public class SchedulerTask extends AbstractLibraTask {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + nextTask;
                 String nextExecPath = taskPath + PS + scheduleTime;
+                prePublish(appName, group, nextTask, scheduleTime);
                 getRegistryHelper().createPersistNode(nextExecPath);
+                postPublish(appName, group, nextTask, scheduleTime);
                 logger.info("task [{} - {}] is published", nextTask, scheduleTime);
                 // 注册下个节点的监听事件
                 IZkChildListener listener = createExecutionListener(group, nextTask, scheduleTime, appName);
