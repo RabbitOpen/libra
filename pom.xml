@@ -121,7 +121,7 @@
     <distributionManagement>
         <repository>
             <id>rabbit-open</id>
-            <url>http://www.rabbit-open.top/nexus/content/repositories/thirdparty</url>
+            <url>http://www.rabbit-open.top:8081/nexus/content/repositories/thirdparty</url>
         </repository>
     </distributionManagement>
 
