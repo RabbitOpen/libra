@@ -10,6 +10,7 @@ import java.util.Date;
  * @author xiaoqianbin
  * @date 2020/7/13
  **/
+@SuppressWarnings("serial")
 public class ExecutionMeta implements Serializable {
 
     private String start;
