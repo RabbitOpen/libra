@@ -618,6 +618,19 @@ public class SchedulerTask extends AbstractLibraTask {
     }
 
     /**
+     * 任务完成了
+     * @param	appName
+	 * @param	group
+	 * @param	taskName
+	 * @param	scheduleTime
+     * @author  xiaoqianbin
+     * @date    2020/7/20
+     **/
+    protected void taskCompleted(String appName, String group, String taskName, String scheduleTime) {
+        // TO DO: record this execution
+    }
+
+    /**
      * 添加任务节点监听器
      * @param group        任务分组
      * @param taskName     任务名
@@ -698,6 +711,7 @@ public class SchedulerTask extends AbstractLibraTask {
                 doHistoryClean(taskPath);
             } else {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
+                taskCompleted(appName, group, taskName, scheduleTime);
                 logger.info("task group[{} - {}] is finished", group, scheduleTime);
             }
         }
