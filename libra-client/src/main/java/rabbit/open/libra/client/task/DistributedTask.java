@@ -4,14 +4,12 @@ import org.apache.zookeeper.CreateMode;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.execution.ExecutableTask;
 import rabbit.open.libra.client.execution.ExecutionMeta;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -75,15 +73,19 @@ public abstract class DistributedTask extends AbstractLibraTask {
             public void run() {
                 while (!isClosed()) {
                     ExecutableTask task = getExecutableTask();
-                    if (null != task) {
-                        executeUserTask(task);
-                        counter = 0;
-                    } else {
-                        counter++;
-                        if (20 == counter) {
+                    try {
+                        if (null != task) {
+                            executeUserTask(task);
                             counter = 0;
-                            tryAcquireTask();
+                        } else {
+                            counter++;
+                            if (20 == counter) {
+                                counter = 0;
+                                tryAcquireTask();
+                            }
                         }
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
                     }
                 }
             }
@@ -218,16 +220,27 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private void tryAcquireUnFinishedTasks(List<String> tasks) {
         tasks.sort(String::compareTo);
-        for (String task : tasks) {
-            Map<Boolean, List<String>> groups = getExecuteInfo(task);
-            List<String> leftPieces = getAvailablePieces(groups);
-            for (String piece : leftPieces) {
-                if (taskSemaphore.availablePermits() > 0 && try2AcquireControl(taskNodePath + PS + task + PS + RUNNING_TASK_PREFIX + piece,
-                        new ExecutionMeta(new Date(), null , getTaskName()),
-                        CreateMode.EPHEMERAL)) {
-                    deductPermits();
-                    addTask(taskNodePath + PS + task, RUNNING_TASK_PREFIX + piece, task);
+        Collections.reverse(tasks);
+        TaskMeta o = getRegistryHelper().readData(RegistryHelper.TASKS_META_SCHEDULE + PS + SchedulerTask.class.getSimpleName());
+        for (int i = 0; i < tasks.size(); i++) {
+            if (o.getGroupTaskConcurrence() == i) {
+                // 减少不必要的扫描分析
+                break;
+            }
+            String task = tasks.get(i);
+            try {
+                Map<Boolean, List<String>> groups = getExecuteInfo(task);
+                List<String> leftPieces = getAvailablePieces(groups);
+                for (String piece : leftPieces) {
+                    if (taskSemaphore.availablePermits() > 0 && try2AcquireControl(taskNodePath + PS + task + PS + RUNNING_TASK_PREFIX + piece,
+                            new ExecutionMeta(new Date(), null , getTaskName()),
+                            CreateMode.EPHEMERAL)) {
+                        deductPermits();
+                        addTask(taskNodePath + PS + task, RUNNING_TASK_PREFIX + piece, task);
+                    }
                 }
+            } catch (LibraException e) {
+                logger.error(e.getMessage());
             }
         }
     }

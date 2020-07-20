@@ -131,6 +131,11 @@ public class SchedulerTask extends AbstractLibraTask {
         startScheduleThread();
     }
 
+    @Override
+    protected final String getTaskName() {
+        return SchedulerTask.class.getSimpleName();
+    }
+
     /**
      * 启动调度线程
      * @author xiaoqianbin
@@ -731,7 +736,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/16
      **/
-    protected int getGroupTaskConcurrence() {
+    public int getGroupTaskConcurrence() {
         return GROUP_TASK_CONCURRENCE;
     }
 

@@ -2,6 +2,7 @@ package rabbit.open.libra.client;
 
 import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.support.CronTrigger;
+import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -47,6 +48,9 @@ public class TaskMeta implements Serializable {
     // 任务执行的时间表达式
     private String cronExpression;
 
+    // 任务最大并行数
+    private int groupTaskConcurrence;
+
     public TaskMeta(TaskPiece taskPiece) {
         setTaskPiece(taskPiece);
         setExecuteOrder(taskPiece.getExecuteOrder());
@@ -55,6 +59,9 @@ public class TaskMeta implements Serializable {
         setGroupName(taskPiece.getTaskGroup());
         setTaskName(taskPiece.getTaskName());
         setCronExpression(taskPiece.getCronExpression());
+        if (taskPiece instanceof SchedulerTask) {
+            setGroupTaskConcurrence(((SchedulerTask) taskPiece).getGroupTaskConcurrence());
+        }
     }
 
     /**
@@ -140,5 +147,13 @@ public class TaskMeta implements Serializable {
     @Override
     public String toString() {
         return getTaskName();
+    }
+
+    public int getGroupTaskConcurrence() {
+        return groupTaskConcurrence;
+    }
+
+    public void setGroupTaskConcurrence(int groupTaskConcurrence) {
+        this.groupTaskConcurrence = groupTaskConcurrence;
     }
 }
