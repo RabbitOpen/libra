@@ -11,6 +11,7 @@ import java.util.Date;
  * @author xiaoqianbin
  * @date 2020/7/11
  **/
+@SuppressWarnings("serial")
 public class TaskMeta implements Serializable {
 
     // 任务片
