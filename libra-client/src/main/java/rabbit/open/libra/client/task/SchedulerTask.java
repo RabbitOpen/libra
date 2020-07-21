@@ -353,26 +353,39 @@ public class SchedulerTask extends AbstractLibraTask {
             prePublish(appName, group, taskName, schedule);
             groupScheduleMap.remove(group);
             addExecutionListener(group, taskName, schedule, appName);
-            doHistoryClean(taskPath);
+            doHistoryClean(taskPath, appName, taskName, group);
         }
     }
 
     /**
-     * 清理历史副本
+     * 清理执行完毕的历史副本
      * @param	taskPath
+     * @param	appName
+     * @param	taskName
+     * @param	groupName
      * @author  xiaoqianbin
      * @date    2020/7/16
      **/
-    protected void doHistoryClean(String taskPath) {
+    protected void doHistoryClean(String taskPath, String appName, String taskName, String groupName) {
+        TaskMeta taskMeta = taskMetaMap.get(appName).get(groupName).stream().filter(t -> taskName.equals(t.getTaskName())).collect(Collectors.toList()).get(0);
         List<String> historyTasks = helper.getChildren(taskPath);
         historyTasks.sort(String::compareTo);
         int total = historyTasks.size();
-        for (int i = 0; i < total - getHistoryReplicationCount(); i++) {
-            String remove = historyTasks.remove(0);
-            try {
-                helper.deleteNode(taskPath + PS + remove);
-            } catch (Exception e) {
-                logger.warn(e.getMessage());
+        int removed = 0;
+        for (String historyTask : historyTasks) {
+            if (removed >= total - getHistoryReplicationCount()) {
+                break;
+            }
+            List<String> children = getRegistryHelper().getChildren(taskPath + PS + historyTask);
+            Map<Boolean, List<String>> map = children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
+            if (!CollectionUtils.isEmpty(map.get(false)) && taskMeta.getSplitsCount() == map.get(false).size()) {
+                // 任务节点所有分片都已完成
+                try {
+                    helper.deleteNode(taskPath + PS + historyTask);
+                    removed++;
+                } catch (Exception e) {
+                    logger.warn(e.getMessage());
+                }
             }
         }
     }
@@ -713,7 +726,7 @@ public class SchedulerTask extends AbstractLibraTask {
                 IZkChildListener listener = createExecutionListener(group, nextTask, scheduleTime, appName);
                 listenerMap.put(nextExecPath, listener);
                 getRegistryHelper().subscribeChildChanges(nextExecPath, listener);
-                doHistoryClean(taskPath);
+                doHistoryClean(taskPath, appName, nextTask, group);
             } else {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 taskCompleted(appName, group, taskName, scheduleTime);

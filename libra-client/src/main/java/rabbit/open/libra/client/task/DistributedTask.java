@@ -236,6 +236,8 @@ public abstract class DistributedTask extends AbstractLibraTask {
                     }
                 }
             } catch (LibraException e) {
+                // to do: ignore, 清理任务会删除节点，getExecuteInfo有概率抛出节点丢失的异常，直接忽略即可
+            } catch (Exception e) {
                 logger.error(e.getMessage());
             }
         }
@@ -248,8 +250,12 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @date    2020/7/13
      **/
     protected Map<Boolean, List<String>> getExecuteInfo(String task) {
-        List<String> children = getRegistryHelper().getChildren(taskNodePath + PS + task);
-        return children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
+        try {
+            List<String> children = getRegistryHelper().getChildren(taskNodePath + PS + task);
+            return children.stream().collect(Collectors.groupingBy(s -> s.startsWith(RUNNING_TASK_PREFIX)));
+        } catch (Exception e) {
+            throw new LibraException(e.getMessage());
+        }
     }
 
     /**
