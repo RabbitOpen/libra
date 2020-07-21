@@ -729,8 +729,8 @@ public class SchedulerTask extends AbstractLibraTask {
                 getRegistryHelper().subscribeChildChanges(nextExecPath, listener);
                 doHistoryClean(taskPath, appName, nextTask, group);
             } else {
-                removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 taskCompleted(appName, group, taskName, scheduleTime);
+                removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 logger.info("task group[{} - {}] is finished", group, scheduleTime);
             }
         }
