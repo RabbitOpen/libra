@@ -331,6 +331,7 @@ public class SchedulerTask extends AbstractLibraTask {
         if (nextScheduleTime.before(new Date())) {
             String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
             String currentLeader = getRegistryHelper().readData(schedulePath);
+            String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName;
             if (!getLeaderName().equals(currentLeader)) {
                 logger.error("leader is changed! current leader is {}", currentLeader);
                 leader = false;
@@ -338,6 +339,7 @@ public class SchedulerTask extends AbstractLibraTask {
             }
             if (scheduleTooBusy(appName, group)) {
                 logger.warn("group[{} ---> {}] task is blocked", appName, group);
+                doHistoryClean(taskPath, appName, taskName, group);
                 return;
             }
             String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
@@ -345,7 +347,6 @@ public class SchedulerTask extends AbstractLibraTask {
             //创建进度信息
             helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
             logger.info("task group[{}] is scheduled at [{}]", group, schedule);
-            String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName;
             String executePath = taskPath + PS + schedule;
             // 创建执行信息
             prePublish(appName, group, taskName, schedule);
