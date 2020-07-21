@@ -4,12 +4,14 @@ import org.apache.zookeeper.CreateMode;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.RegistryHelper;
-import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.execution.ExecutableTask;
 import rabbit.open.libra.client.execution.ExecutionMeta;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -220,13 +222,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
      **/
     private void tryAcquireUnFinishedTasks(List<String> tasks) {
         tasks.sort(String::compareTo);
-        Collections.reverse(tasks);
-        TaskMeta o = getRegistryHelper().readData(RegistryHelper.TASKS_META_SCHEDULE + PS + SchedulerTask.class.getSimpleName());
         for (int i = 0; i < tasks.size(); i++) {
-            if (o.getGroupTaskConcurrence() == i) {
-                // 减少不必要的扫描分析
-                break;
-            }
             String task = tasks.get(i);
             try {
                 Map<Boolean, List<String>> groups = getExecuteInfo(task);

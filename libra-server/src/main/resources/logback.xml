@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false" scan="true" scanPeriod="1 seconds">
 
-    <property name="APP" value="es"/>
-    <property name="LOG_HOME" value="/export/log/${APP}"/>
+    <property name="APP" value="lib"/>
+    <property name="LOG_HOME" value="./${APP}"/>
     <!--ConsoleAppender 用于在屏幕上输出日志-->
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <!--定义了一个过滤器,在LEVEL之下的日志输出不会被打印出来-->
