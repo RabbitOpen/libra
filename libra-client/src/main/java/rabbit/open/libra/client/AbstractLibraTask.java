@@ -42,11 +42,6 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
     private static Map<String, Map<String, List<TaskMeta>>> taskMetaCache = new ConcurrentHashMap<>();
 
     /**
-     * 任务运行状态
-     **/
-    private static boolean executeStatus = false;
-
-    /**
      * 是否是系统任务
      * @author xiaoqianbin
      * @date 2020/7/13
@@ -110,10 +105,6 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
      * @date 2020/7/11
      **/
     public static synchronized void runScheduleTasks() {
-        if (executeStatus) {
-            return;
-        }
-        executeStatus = true;
         Map<String, List<TaskMeta>> appMap = getTaskMetaCache(DEFAULT_APP);
         if (CollectionUtils.isEmpty(appMap)) {
             TASK_LOGGER.warn("default-app is not existed!");

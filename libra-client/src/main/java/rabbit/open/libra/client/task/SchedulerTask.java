@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -57,6 +58,8 @@ public class SchedulerTask extends AbstractLibraTask {
 
     @Autowired
     protected RegistryHelper helper;
+
+    protected AtomicLong mutex = new AtomicLong(0);
 
     /**
      * 加载元信息锁
@@ -111,6 +114,9 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     @Override
     public void execute(int index, int splits, String taskScheduleTime) {
+        if (mutex.getAndAdd(1L) > 1) {
+            return;
+        }
         String schedulePath = RegistryHelper.TASKS_EXECUTION_SCHEDULE + PS + getTaskName();
         // 注册网络事件监听
         registerStateChangeListener();
@@ -594,6 +600,7 @@ public class SchedulerTask extends AbstractLibraTask {
             // 一个任务可能有多个调度在执行
             List<String> tasks = getRegistryHelper().getChildren(path);
             if (CollectionUtils.isEmpty(tasks)) {
+                helper.deleteNode(path);
                 continue;
             }
             String taskName = tasks.get(0);
@@ -729,8 +736,8 @@ public class SchedulerTask extends AbstractLibraTask {
                 getRegistryHelper().subscribeChildChanges(nextExecPath, listener);
                 doHistoryClean(taskPath, appName, nextTask, group);
             } else {
-                taskCompleted(appName, group, taskName, scheduleTime);
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
+                taskCompleted(appName, group, taskName, scheduleTime);
                 logger.info("task group[{} - {}] is finished", group, scheduleTime);
             }
         }

@@ -1,6 +1,7 @@
 package rabbit.open.libra.test;
 
 import junit.framework.TestCase;
+import org.I0Itec.zkclient.ZkClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -10,9 +11,12 @@ import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.SchedulerTask;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 任务测试
@@ -22,7 +26,6 @@ import java.util.concurrent.Semaphore;
 @RunWith(JUnit4.class)
 public class SimpleTest {
 
-    static RegistryHelper registryHelper = new RegistryHelper();
     /**
      * 编组测试
      * @author  xiaoqianbin
@@ -30,12 +33,14 @@ public class SimpleTest {
      **/
     @Test
     public void groupTest() throws Exception {
-        Semaphore s = new Semaphore(0);
+        clearMap();
+        RegistryHelper registryHelper = getHelper();
+        Semaphore holdOn = new Semaphore(0);
         MySchedulerTask st = new MySchedulerTask(registryHelper) {
             @Override
             protected void loadTaskMetas() {
                 super.loadTaskMetas();
-                s.release();
+                holdOn.release();
             }
         };
         st.afterPropertiesSet();
@@ -48,7 +53,7 @@ public class SimpleTest {
         T4 t4 = new T4(registryHelper);
         t4.afterPropertiesSet();
         AbstractLibraTask.runScheduleTasks();
-        s.acquire();
+        holdOn.acquire();
         List<TaskMeta> gt1 = st.getTaskMetas().get(t1.getAppName()).get(t1.getTaskGroup());
         List<TaskMeta> gt3 = st.getTaskMetas().get(t1.getAppName()).get(t3.getTaskGroup());
         List<TaskMeta> gt4 = st.getTaskMetas().get(t1.getAppName()).get(t4.getTaskGroup());
@@ -57,18 +62,177 @@ public class SimpleTest {
         TestCase.assertEquals(1, gt4.size());
         TestCase.assertEquals(t1.getTaskName(), gt1.get(0).getTaskName());
         TestCase.assertEquals(t2.getTaskName(), gt1.get(1).getTaskName());
-
-
         AbstractLibraTask.shutdown();
-
     }
 
+    /**
+     * 清理全局静态变量
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    private void clearMap() throws NoSuchFieldException, IllegalAccessException {
+        Field taskMetaCache = AbstractLibraTask.class.getDeclaredField("taskMetaCache");
+        taskMetaCache.setAccessible(true);
+        Map<String, Map<String, List<TaskMeta>>> map = (Map<String, Map<String, List<TaskMeta>>>) taskMetaCache.get(null);
+        map.clear();
+    }
 
-
-    static {
+    private RegistryHelper getHelper() {
+        RegistryHelper registryHelper = new RegistryHelper();
         registryHelper.setRootPath("/libra/simple-test");
         registryHelper.setHosts("localhost:2181");
+        ZkClient zkClient = new ZkClient("localhost:2181");
+        zkClient.deleteRecursive("/libra/simple-test");
+        zkClient.close();
         registryHelper.init();
+        return registryHelper;
+    }
+
+    private AtomicLong counter;
+    /**
+     * 调度测试
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    @Test
+    public void scheduleTest() throws Exception {
+        clearMap();
+        RegistryHelper registryHelper = getHelper();
+        Semaphore holdOn = new Semaphore(0);
+        Semaphore step = new Semaphore(0);
+        counter = new AtomicLong(10);
+        MySchedulerTask st = new MySchedulerTask(registryHelper){
+            @Override
+            protected void loadTaskMetas() {
+                super.loadTaskMetas();
+                holdOn.release();
+            }
+
+            @Override
+            protected void prePublish(String appName, String group, String taskName, String scheduleTime) {
+                logger.info("{}-{}-{}", appName, group, taskName);
+                if ("GTS-T2".equals(taskName)) {
+                    TestCase.assertEquals(16, counter.get());
+                } else if ("GTS-T3".equals(taskName)) {
+                    TestCase.assertEquals(22, counter.get());
+                }
+            }
+
+            @Override
+            protected void taskCompleted(String appName, String group, String taskName, String scheduleTime) {
+                logger.info("task group[{}] is finished", group);
+                step.release();
+            }
+        };
+        st.afterPropertiesSet();
+        T1 t1 = new T1(registryHelper) {
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T1";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 0;
+            }
+
+            @Override
+            protected int getSplitsCount() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0/20 * * * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                counter.addAndGet(3);
+            }
+        };
+        t1.afterPropertiesSet();
+        T2 t2 = new T2(registryHelper) {
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T2";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 1;
+            }
+
+            @Override
+            protected int getSplitsCount() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0/20 * * * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                counter.addAndGet(3);
+            }
+        };
+        t2.afterPropertiesSet();
+        T3 t3 = new T3(registryHelper) {
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T3";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0/20 * * * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                counter.addAndGet(10);
+            }
+        };
+        t3.afterPropertiesSet();
+        AbstractLibraTask.runScheduleTasks();
+        holdOn.acquire();
+        List<TaskMeta> gt1 = st.getTaskMetas().get(t1.getAppName()).get(t1.getTaskGroup());
+        TestCase.assertEquals(3, gt1.size());
+        TestCase.assertEquals(t1.getTaskName(), gt1.get(0).getTaskName());
+        TestCase.assertEquals(t2.getTaskName(), gt1.get(1).getTaskName());
+        TestCase.assertEquals(t3.getTaskName(), gt1.get(2).getTaskName());
+        while (true) {
+            if (step.tryAcquire(3, TimeUnit.SECONDS)) {
+                TestCase.assertEquals(32, counter.get());
+                break;
+            }
+        }
+        AbstractLibraTask.shutdown();
     }
 
     public static class MySchedulerTask extends SchedulerTask {
@@ -76,6 +240,7 @@ public class SimpleTest {
         public MySchedulerTask(RegistryHelper helper) {
             this.helper = helper;
         }
+
         @Override
         public RegistryHelper getRegistryHelper() {
 

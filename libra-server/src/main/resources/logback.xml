@@ -19,6 +19,9 @@
 
     <appender name="DETAIL" class="ch.qos.logback.core.rolling.RollingFileAppender" additivity="false">
         <File>${LOG_HOME}/${APP}.log</File>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>info</level>
+        </filter>
         <encoder>
             <pattern>%d{yy-MM-dd.HH:mm:ss.SSS} [%-16t] %-5p %-22c{0} - %m%n</pattern>
         </encoder>
@@ -26,6 +29,8 @@
             <fileNamePattern>${LOG_HOME}/${APP}_detail.log.%d{yyyyMMdd}</fileNamePattern>
         </rollingPolicy>
     </appender>
+
+    <logger name="org.apache.zookeeper.ClientCnxn" level="info" />
 
     <root level="debug">
         <appender-ref ref="DETAIL"/>

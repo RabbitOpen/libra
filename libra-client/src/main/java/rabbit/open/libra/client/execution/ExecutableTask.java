@@ -23,7 +23,7 @@ public class ExecutableTask implements Runnable {
 
     @Override
     public void run() {
-        task.run();
+        getTask().run();
     }
 
     public Runnable getTask() {
