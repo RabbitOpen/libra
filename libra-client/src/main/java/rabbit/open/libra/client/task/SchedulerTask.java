@@ -755,7 +755,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author  xiaoqianbin
      * @date    2020/7/20
      **/
-    protected void taskCompleted(String appName, String group, String taskName, String scheduleTime) {
+    protected void taskFinished(String appName, String group, String taskName, String scheduleTime) {
         // TO DO: record this execution
     }
 
@@ -819,6 +819,7 @@ public class SchedulerTask extends AbstractLibraTask {
                 // 还有未完成的分片 直接跳过
                 return;
             }
+            taskFinished(appName, group, taskName, scheduleTime);
             getRegistryHelper().unsubscribeChildChanges(execPath, (IZkChildListener) listenerMap.get(execPath));
             listenerMap.remove(execPath);
             String nextTask = getNextTask(group, taskName, appName);
@@ -840,7 +841,6 @@ public class SchedulerTask extends AbstractLibraTask {
                 doHistoryClean(taskPath, appName, nextTask, group);
             } else {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
-                taskCompleted(appName, group, taskName, scheduleTime);
                 logger.info("task group[{} - {}] is finished", group, scheduleTime);
             }
         }

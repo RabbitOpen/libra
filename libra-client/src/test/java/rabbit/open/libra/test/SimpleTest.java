@@ -73,7 +73,8 @@ public class SimpleTest {
     private void clearMap() throws NoSuchFieldException, IllegalAccessException {
         Field taskMetaCache = AbstractLibraTask.class.getDeclaredField("taskMetaCache");
         taskMetaCache.setAccessible(true);
-        Map<String, Map<String, List<TaskMeta>>> map = (Map<String, Map<String, List<TaskMeta>>>) taskMetaCache.get(null);
+        @SuppressWarnings("unchecked")
+		Map<String, Map<String, List<TaskMeta>>> map = (Map<String, Map<String, List<TaskMeta>>>) taskMetaCache.get(null);
         map.clear();
     }
 
@@ -119,9 +120,11 @@ public class SimpleTest {
             }
 
             @Override
-            protected void taskCompleted(String appName, String group, String taskName, String scheduleTime) {
-                logger.info("task group[{}] is finished", group);
-                step.release();
+            protected void taskFinished(String appName, String group, String taskName, String scheduleTime) {
+                if ("GTS-T3".equals(taskName)) {
+                	logger.info("whole group[{}] is finished", group);
+                	step.release();
+                }
             }
         };
         st.afterPropertiesSet();
@@ -260,7 +263,7 @@ public class SimpleTest {
             }
 
             @Override
-            protected void taskCompleted(String appName, String group, String taskName, String scheduleTime) {
+            protected void taskFinished(String appName, String group, String taskName, String scheduleTime) {
                 logger.info("task [{}-{}-{}] is finished", group, taskName, scheduleTime);
                 step.release();
             }
@@ -374,7 +377,8 @@ public class SimpleTest {
         TestCase.assertEquals(0, step.availablePermits());
         TestCase.assertEquals(16, counter.get());
         t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200723", true);
-        step.acquire();
+        step.acquire(2);
+       
         TestCase.assertEquals(0, step.availablePermits());
         TestCase.assertEquals(32, counter.get());
         AbstractLibraTask.shutdown();
