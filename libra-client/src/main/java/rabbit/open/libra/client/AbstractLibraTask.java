@@ -114,7 +114,6 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
             return;
         }
         executeStatus = true;
-        refreshMeta();
         Map<String, List<TaskMeta>> appMap = getTaskMetaCache(DEFAULT_APP);
         if (CollectionUtils.isEmpty(appMap)) {
             TASK_LOGGER.warn("default-app is not existed!");
@@ -123,78 +122,6 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
         List<TaskMeta> scheduleTasks = appMap.get(SchedulerTask.SCHEDULE_GROUP);
         if (!CollectionUtils.isEmpty(scheduleTasks)) {
             scheduleTasks.forEach(t -> t.getTaskPiece().execute(0, 1, null));
-        }
-    }
-
-    /**
-     * 刷新meta信息, 移除多余的meta节点信息
-     * @author xiaoqianbin
-     * @date 2020/7/15
-     **/
-    private static void refreshMeta() {
-        if (taskMetaCache.isEmpty()) {
-            return;
-        }
-        Map<String, List<TaskMeta>> map = taskMetaCache.values().iterator().next();
-        if (map.isEmpty()) {
-            return;
-        }
-        AbstractLibraTask task = (AbstractLibraTask) map.values().iterator().next().get(0).getTaskPiece();
-        RegistryHelper helper = task.getRegistryHelper();
-        if (taskMetaCache.containsKey(DEFAULT_APP) && taskMetaCache.get(DEFAULT_APP).containsKey(SchedulerTask.SCHEDULE_GROUP)
-                && 1 == taskMetaCache.get(DEFAULT_APP).size()
-            ) {
-            // 独立部署的模式不做清理工作
-            TASK_LOGGER.info("scheduler is deployed in separate mode");
-            return;
-        }
-        for (String app : taskMetaCache.keySet()) {
-            refreshMetaByApp(helper, app);
-        }
-    }
-
-    /**
-     * 按app 刷新meta信息
-     * @param    helper
-     * @param    app
-     * @author xiaoqianbin
-     * @date 2020/7/16
-     **/
-    private static void refreshMetaByApp(RegistryHelper helper, String app) {
-        String relativeAppPath = RegistryHelper.TASKS_META_USERS + PS + app;
-        if (!helper.exists(relativeAppPath)) {
-            return;
-        }
-        List<String> tasks = helper.getChildren(relativeAppPath);
-        for (String taskName : tasks) {
-            refreshByTask(helper, app, taskName);
-        }
-    }
-
-    /**
-     * 按任务刷新
-     * @param	helper
-	 * @param	app
-	 * @param	taskName
-     * @author  xiaoqianbin
-     * @date    2020/7/17
-     **/
-    private static void refreshByTask(RegistryHelper helper, String app, String taskName) {
-        boolean exists = false;
-        Map<String, List<TaskMeta>> map = taskMetaCache.get(app);
-        for (List<TaskMeta> metas : map.values()) {
-            for (TaskMeta meta : metas) {
-                if (meta.getTaskName().equals(taskName)) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (exists) {
-                break;
-            }
-        }
-        if (!exists) {
-            helper.delete(RegistryHelper.TASKS_META_USERS + PS + app + PS + taskName);
         }
     }
 
@@ -209,6 +136,24 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
 
         // 关闭普通任务
         closeUserTasks();
+
+        // 关闭zk
+        closeZookeeper();
+    }
+
+    /**
+     * 关闭zk
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    private static void closeZookeeper() {
+        try {
+            AbstractLibraTask taskPiece = (AbstractLibraTask) taskMetaCache.values().iterator().next().values()
+                    .iterator().next().get(0).getTaskPiece();
+            taskPiece.getRegistryHelper().destroy();
+        } catch (Exception e) {
+            TASK_LOGGER.error(e.getMessage());
+        }
     }
 
     /**

@@ -56,7 +56,7 @@ public class SchedulerTask extends AbstractLibraTask {
     private boolean leader = false;
 
     @Autowired
-    private RegistryHelper helper;
+    protected RegistryHelper helper;
 
     /**
      * 加载元信息锁
@@ -132,7 +132,7 @@ public class SchedulerTask extends AbstractLibraTask {
     }
 
     @Override
-    protected final String getTaskName() {
+    public final String getTaskName() {
         return SchedulerTask.class.getSimpleName();
     }
 
@@ -840,7 +840,7 @@ public class SchedulerTask extends AbstractLibraTask {
     }
 
     @Override
-    protected final String getTaskGroup() {
+    public final String getTaskGroup() {
         return SCHEDULE_GROUP;
     }
 

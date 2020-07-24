@@ -214,7 +214,6 @@ public class RegistryHelper {
      * @author xiaoqianbin
      * @date 2020/7/11
      **/
-    @PreDestroy
     public synchronized void destroy() {
         if (!destroyed) {
             removeNode("/executors/" + executorName);

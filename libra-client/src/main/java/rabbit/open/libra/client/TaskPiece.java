@@ -37,7 +37,7 @@ public abstract class TaskPiece {
      * @author  xiaoqianbin
      * @date    2020/7/10
      **/
-    protected String getTaskGroup() {
+    public String getTaskGroup() {
         return DEFAULT_GROUP;
     }
 
@@ -46,7 +46,7 @@ public abstract class TaskPiece {
      * @author  xiaoqianbin
      * @date    2020/7/10
      **/
-    protected String getTaskName() {
+    public String getTaskName() {
         return getClass().getSimpleName();
     }
 
@@ -106,7 +106,7 @@ public abstract class TaskPiece {
      * @author  xiaoqianbin
      * @date    2020/7/16
      **/
-    protected String getAppName() {
+    public String getAppName() {
         return DEFAULT_APP;
     }
 }

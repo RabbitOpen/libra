@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
+import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.util.ArrayList;
@@ -29,8 +30,8 @@ public class LibraTest {
 
     /**
      * 读写测试
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     @Test
     public void helperTest() {
@@ -51,8 +52,8 @@ public class LibraTest {
 
     /**
      * 事件注册
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     @Test
     public void eventTest() throws InterruptedException {
@@ -83,8 +84,8 @@ public class LibraTest {
 
     /**
      * 并发测试
-     * @author  xiaoqianbin
-     * @date    2020/7/14
+     * @author xiaoqianbin
+     * @date 2020/7/14
      **/
     @Test
     public void multiThreadTest() throws InterruptedException {
@@ -114,7 +115,7 @@ public class LibraTest {
 
     @Test
     public void selectLastTaskTest() {
-        SchedulerTaskTest st = new SchedulerTaskTest() ;
+        SchedulerTaskTest st = new SchedulerTaskTest();
 
         List<String> task = new ArrayList<>();
         task.add("MyTask");
@@ -136,11 +137,36 @@ public class LibraTest {
     }
 
 
-
     public class SchedulerTaskTest extends SchedulerTask {
         @Override
         public String getLatestTask(List<String> tasks, List<TaskMeta> metaList) {
             return super.getLatestTask(tasks, metaList);
         }
+    }
+
+    public static class MyTask extends DistributedTask {
+        @Override
+        public RegistryHelper getRegistryHelper() {
+            return null;
+        }
+
+        @Override
+        public void execute(int index, int splits, String taskScheduleTime) {
+
+        }
+
+        @Override
+        protected String getCronExpression() {
+            return null;
+        }
+    }
+
+    public static class MyTask4 extends MyTask {
+    }
+
+    public static class MyTask2 extends MyTask {
+    }
+
+    public static class MyTask3 extends MyTask {
     }
 }
