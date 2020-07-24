@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import rabbit.open.libra.client.exception.LibraException;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.net.InetAddress;
 import java.util.List;
 
