@@ -1,6 +1,7 @@
 package rabbit.open.libra.client;
 
 import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.zookeeper.CreateMode;
@@ -20,6 +21,8 @@ import java.util.List;
  **/
 public class RegistryHelper {
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
     /**
      * 运行信息路径
      **/
@@ -36,6 +39,11 @@ public class RegistryHelper {
     public static final String TASKS_EXECUTION_USERS = "/tasks/execution/users";
 
     /**
+     * 任务触发节点
+     **/
+    public static final String TASKS_EXECUTION_TRIGGER = "/tasks/execution/trigger";
+
+    /**
      * 用户任务meta信息路径
      **/
     public static final String TASKS_META_USERS = "/tasks/meta/users";
@@ -45,7 +53,6 @@ public class RegistryHelper {
      **/
     public static final String TASKS_META_SCHEDULE = "/tasks/meta/schedule";
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
 
     // zk地址
     @Value("${zookeeper.hosts.url:localhost:2181}")
@@ -90,6 +97,18 @@ public class RegistryHelper {
      **/
     public void createPersistNode(String relativePath, boolean ignoreError) {
         createPersistNode(rootPath + relativePath, null, CreateMode.PERSISTENT, ignoreError);
+    }
+
+    /**
+     * 递归创建永久节点
+     * @param	relativePath
+     * @param	data            数据
+     * @param	ignoreError     忽略错误
+     * @author  xiaoqianbin
+     * @date    2020/7/16
+     **/
+    public void createPersistNode(String relativePath, Object data, boolean ignoreError) {
+        createPersistNode(rootPath + relativePath, data, CreateMode.PERSISTENT, ignoreError);
     }
 
     /**
@@ -171,6 +190,7 @@ public class RegistryHelper {
         createPersistNode("/tasks/execution");
         createPersistNode(TASKS_EXECUTION_USERS);
         createPersistNode(TASKS_EXECUTION_SCHEDULE);
+        createPersistNode(TASKS_EXECUTION_TRIGGER);
         // 处于执行中的任务
         createPersistNode(TASKS_EXECUTION_RUNNING);
         registerExecutor();
@@ -185,6 +205,17 @@ public class RegistryHelper {
      **/
     public void subscribeChildChanges(String relativePath, IZkChildListener listener) {
         client.subscribeChildChanges(rootPath + relativePath, listener);
+    }
+
+    /**
+     * 订阅数据变化
+     * @param	relativePath
+	 * @param	listener
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    public void subscribeDataChanges(String relativePath, IZkDataListener listener) {
+        client.subscribeDataChanges(rootPath + relativePath, listener);
     }
 
     /**
@@ -268,6 +299,17 @@ public class RegistryHelper {
      **/
     public <T> T readData(String relativePath) {
         return client.readData(rootPath + relativePath);
+    }
+
+    /**
+     * 写数据
+     * @param	relativePath
+	 * @param	data
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    public void writeData(String relativePath, Object data) {
+        client.writeData(rootPath + relativePath, data);
     }
 
     /**

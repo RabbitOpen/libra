@@ -1,18 +1,21 @@
 package rabbit.open.libra.client.task;
 
 import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
+import rabbit.open.libra.client.ManualScheduleType;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -78,7 +81,7 @@ public class SchedulerTask extends AbstractLibraTask {
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private Map<String, IZkChildListener> listenerMap = new ConcurrentHashMap<>();
+    private Map<String, Object> listenerMap = new ConcurrentHashMap<>();
 
     /**
      * 监控线程阻塞信号
@@ -98,6 +101,11 @@ public class SchedulerTask extends AbstractLibraTask {
      * @date 2020/7/15
      **/
     private Map<String, Map<String, Date>> groupScheduleMap = new ConcurrentHashMap<>();
+
+    /**
+     * 手动任务队列
+     **/
+    private ArrayBlockingQueue<String> manualTasks = new ArrayBlockingQueue<>(512);
 
     @Override
     public RegistryHelper getRegistryHelper() {
@@ -245,12 +253,107 @@ public class SchedulerTask extends AbstractLibraTask {
     protected void beginSchedule() {
         // 加载任务元信息
         loadTaskMetas();
+
         // 打印日志
         logMeta();
+
+        // 添加手动任务监听器
+        addManualTaskListener();
+
         // 尝试恢复未完成的任务
         recoverUnFinishedTasks();
+
         // 定时调度未被调度的节点
         doSchedule();
+    }
+
+    /**
+     * 手动任务监听器
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    private void addManualTaskListener() {
+        if (!listenerMap.containsKey(RegistryHelper.TASKS_EXECUTION_TRIGGER)) {
+            IZkDataListener manualTaskListener = new IZkDataListener() {
+                @Override
+                public void handleDataChange(String path, Object o) {
+                    manualTaskChanged();
+                }
+
+                @Override
+                public void handleDataDeleted(String s) {
+                    // nobody care this branch
+                }
+            };
+            listenerMap.put(RegistryHelper.TASKS_EXECUTION_TRIGGER, manualTaskListener);
+            helper.subscribeDataChanges(RegistryHelper.TASKS_EXECUTION_TRIGGER, manualTaskListener);
+            manualTaskChanged();
+        }
+    }
+
+    /**
+     * 手动任务更新
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    private void manualTaskChanged() {
+        List<String> children = helper.getChildren(RegistryHelper.TASKS_EXECUTION_TRIGGER);
+        for (String child : children) {
+            if (!manualTasks.contains(child)) {
+                try {
+                    manualTasks.put(child);
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        }
+        scheduleManualTask();
+    }
+
+    /**
+     * 调度人工任务
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    private void scheduleManualTask() {
+        while (true) {
+            String task = manualTasks.poll();
+            if (null == task) {
+                break;
+            } else {
+                String[] description = task.split("@");
+                if (5 != description.length) {
+                    logger.error("wrong manual task description[{}] is found", task);
+                } else {
+                    publishManualTask(description, task);
+                }
+            }
+        }
+    }
+
+    /**
+     * 发布人工任务
+     * @param	description
+     * @param	task
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    private void publishManualTask(String[] description, String task) {
+        String appName = description[0];
+        String group = description[1];
+        String taskName = description[2];
+        String schedule = description[3];
+        String type = description[4];
+        String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
+        String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName;
+        logger.info("task group[{}] is scheduled at [{}]", group, schedule);
+        helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
+        // 创建执行信息
+        prePublish(appName, group, taskName, schedule);
+        helper.createPersistNode(taskPath + PS + schedule, ManualScheduleType.valueOf(type), true);
+        prePublish(appName, group, taskName, schedule);
+        addExecutionListener(group, taskName, schedule, appName);
+        helper.deleteNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + PS + task);
     }
 
     /**
@@ -348,8 +451,8 @@ public class SchedulerTask extends AbstractLibraTask {
                 doHistoryClean(taskPath, appName, taskName, group);
                 return;
             }
-            String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
             String schedule = sdf.format(nextScheduleTime);
+            String groupRunningPath = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
             //创建进度信息
             helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
             logger.info("task group[{}] is scheduled at [{}]", group, schedule);
@@ -358,8 +461,8 @@ public class SchedulerTask extends AbstractLibraTask {
             prePublish(appName, group, taskName, schedule);
             helper.createPersistNode(executePath);
             prePublish(appName, group, taskName, schedule);
-            groupScheduleMap.remove(group);
             addExecutionListener(group, taskName, schedule, appName);
+            groupScheduleMap.remove(group);
             doHistoryClean(taskPath, appName, taskName, group);
         }
     }
@@ -670,7 +773,7 @@ public class SchedulerTask extends AbstractLibraTask {
         IZkChildListener listener = createExecutionListener(group, taskName, scheduleTime, appName);
         if (listenerMap.containsKey(execPath)) {
             // 防止重复注册
-            getRegistryHelper().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
+            getRegistryHelper().unsubscribeChildChanges(execPath, (IZkChildListener) listenerMap.get(execPath));
         }
         listenerMap.put(execPath, listener);
         getRegistryHelper().subscribeChildChanges(execPath, listener);
@@ -700,7 +803,7 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     private void checkSchedulingStatus(String group, String taskName, String scheduleTime, String appName) {
         String execPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName + PS + scheduleTime;
-        IZkChildListener taskListener = listenerMap.get(execPath);
+        IZkChildListener taskListener = (IZkChildListener) listenerMap.get(execPath);
         if (null == taskListener) {
             // 最后一个分片触发的两次事件事件很短暂，第一次就就会处理
             return;
@@ -716,11 +819,11 @@ public class SchedulerTask extends AbstractLibraTask {
                 // 还有未完成的分片 直接跳过
                 return;
             }
-            getRegistryHelper().unsubscribeChildChanges(execPath, listenerMap.get(execPath));
+            getRegistryHelper().unsubscribeChildChanges(execPath, (IZkChildListener) listenerMap.get(execPath));
             listenerMap.remove(execPath);
             String nextTask = getNextTask(group, taskName, appName);
             String runningRoot = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
-            if (null != nextTask) {
+            if (null != nextTask && ManualScheduleType.SINGLE != helper.readData(execPath)) {
                 // 调度分组中的下一个任务
                 getRegistryHelper().createPersistNode(runningRoot + PS + scheduleTime + PS + nextTask);
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);

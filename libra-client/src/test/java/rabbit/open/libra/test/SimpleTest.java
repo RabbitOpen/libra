@@ -235,6 +235,153 @@ public class SimpleTest {
         AbstractLibraTask.shutdown();
     }
 
+    /**
+     * 手工调度测试
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    @Test
+    public void manualTest() throws Exception {
+        clearMap();
+        RegistryHelper registryHelper = getHelper();
+        Semaphore holdOn = new Semaphore(0);
+        Semaphore step = new Semaphore(0);
+        counter = new AtomicLong(10);
+        MySchedulerTask st = new MySchedulerTask(registryHelper){
+            @Override
+            protected void loadTaskMetas() {
+                super.loadTaskMetas();
+                holdOn.release();
+            }
+
+            @Override
+            protected void prePublish(String appName, String group, String taskName, String scheduleTime) {
+
+            }
+
+            @Override
+            protected void taskCompleted(String appName, String group, String taskName, String scheduleTime) {
+                logger.info("task [{}-{}-{}] is finished", group, taskName, scheduleTime);
+                step.release();
+            }
+        };
+        st.afterPropertiesSet();
+        T1 t1 = new T1(registryHelper) {
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T1";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 0;
+            }
+
+            @Override
+            protected int getSplitsCount() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0 0 2 * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                counter.addAndGet(3);
+            }
+        };
+        t1.afterPropertiesSet();
+        T2 t2 = new T2(registryHelper) {
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T2";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 1;
+            }
+
+            @Override
+            protected int getSplitsCount() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0 0 2 * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                counter.addAndGet(3);
+            }
+        };
+        t2.afterPropertiesSet();
+        T3 t3 = new T3(registryHelper) {
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T3";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0 0 2 * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                counter.addAndGet(10);
+            }
+        };
+        t3.afterPropertiesSet();
+        AbstractLibraTask.runScheduleTasks();
+        holdOn.acquire();
+        List<TaskMeta> gt1 = st.getTaskMetas().get(t1.getAppName()).get(t1.getTaskGroup());
+        TestCase.assertEquals(3, gt1.size());
+        TestCase.assertEquals(t1.getTaskName(), gt1.get(0).getTaskName());
+        TestCase.assertEquals(t2.getTaskName(), gt1.get(1).getTaskName());
+        TestCase.assertEquals(t3.getTaskName(), gt1.get(2).getTaskName());
+
+        // 发布t2
+        t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200722", false);
+        step.acquire();
+        TestCase.assertEquals(0, step.availablePermits());
+        TestCase.assertEquals(16, counter.get());
+        t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200723", true);
+        step.acquire();
+        TestCase.assertEquals(0, step.availablePermits());
+        TestCase.assertEquals(32, counter.get());
+        AbstractLibraTask.shutdown();
+
+    }
+
+
     public static class MySchedulerTask extends SchedulerTask {
 
         public MySchedulerTask(RegistryHelper helper) {
