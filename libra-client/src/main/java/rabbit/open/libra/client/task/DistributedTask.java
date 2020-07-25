@@ -173,7 +173,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
         quitSemaphore.release(getParallel());
         for (Thread executor : executors) {
             try {
-                executor.interrupt();
                 executor.join();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);

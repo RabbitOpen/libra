@@ -35,6 +35,7 @@ public class SimpleTest {
     public void groupTest() throws Exception {
         clearMap();
         RegistryHelper registryHelper = getHelper();
+        registryHelper.createPersistNode(RegistryHelper.TASKS_EXECUTION_RUNNING + "/default-app/g1/20200702000000/T1");
         Semaphore holdOn = new Semaphore(0);
         MySchedulerTask st = new MySchedulerTask(registryHelper) {
             @Override
