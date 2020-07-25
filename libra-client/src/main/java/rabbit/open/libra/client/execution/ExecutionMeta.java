@@ -13,13 +13,11 @@ import java.util.Date;
 @SuppressWarnings("serial")
 public class ExecutionMeta implements Serializable {
 
-    private String start;
+    protected String start;
 
-    private String end;
+    protected String taskName;
 
-    private String taskName;
-
-    private String executor;
+    protected String executor;
 
     /**
      * 构造函数
@@ -29,12 +27,9 @@ public class ExecutionMeta implements Serializable {
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
-    public ExecutionMeta(Date start, Date end, String taskName) {
+    public ExecutionMeta(Date start, String taskName) {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         setStart(formatter.format(start));
-        if (null != end) {
-            setEnd(formatter.format(end));
-        }
         setTaskName(taskName);
         try {
             setExecutor(InetAddress.getLocalHost().getHostName());
@@ -43,32 +38,12 @@ public class ExecutionMeta implements Serializable {
         }
     }
 
-    public String getExecutor() {
-        return executor;
-    }
-
     public void setExecutor(String executor) {
         this.executor = executor;
     }
 
-    public String getStart() {
-        return start;
-    }
-
     public void setStart(String start) {
         this.start = start;
-    }
-
-    public String getEnd() {
-        return end;
-    }
-
-    public void setEnd(String end) {
-        this.end = end;
-    }
-
-    public String getTaskName() {
-        return taskName;
     }
 
     public void setTaskName(String taskName) {

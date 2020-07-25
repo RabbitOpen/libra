@@ -228,7 +228,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
                 List<String> leftPieces = getAvailablePieces(groups);
                 for (String piece : leftPieces) {
                     if (taskSemaphore.availablePermits() > 0 && try2AcquireControl(taskNodePath + PS + task + PS + RUNNING_TASK_PREFIX + piece,
-                            new ExecutionMeta(new Date(), null , getTaskName()),
+                            new ExecutionMeta(new Date(), getTaskName()),
                             CreateMode.EPHEMERAL)) {
                         deductPermits();
                         addTask(taskNodePath + PS + task, RUNNING_TASK_PREFIX + piece, task);
