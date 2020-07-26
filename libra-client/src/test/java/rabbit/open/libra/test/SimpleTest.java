@@ -121,7 +121,7 @@ public class SimpleTest {
             }
 
             @Override
-            protected void taskFinished(String appName, String group, String taskName, String scheduleTime) {
+            protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
                 if ("GTS-T3".equals(taskName)) {
                 	logger.info("whole group[{}] is finished", group);
                 	step.release();
@@ -238,6 +238,8 @@ public class SimpleTest {
         }
         AbstractLibraTask.shutdown();
     }
+    
+    int scheduled = 0;
 
     /**
      * 手工调度测试
@@ -251,6 +253,7 @@ public class SimpleTest {
         Semaphore holdOn = new Semaphore(0);
         Semaphore step = new Semaphore(0);
         counter = new AtomicLong(10);
+        scheduled = 0;
         MySchedulerTask st = new MySchedulerTask(registryHelper){
             @Override
             protected void loadTaskMetas() {
@@ -264,9 +267,17 @@ public class SimpleTest {
             }
 
             @Override
-            protected void taskFinished(String appName, String group, String taskName, String scheduleTime) {
+            protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
                 logger.info("task [{}-{}-{}] is finished", group, taskName, scheduleTime);
                 step.release();
+            }
+            
+            @Override
+            protected void onTaskStarted(String appName, String group, String taskName, String scheduleTime) {
+            	
+            	logger.info("taskxxx {} started", taskName);
+            	scheduled++;
+            	step.release();
             }
         };
         st.afterPropertiesSet();
@@ -327,6 +338,7 @@ public class SimpleTest {
 
             @Override
             protected String getCronExpression() {
+            	// 设置为凌晨两点调度，避免影响单元测试
                 return "0 0 2 * * *";
             }
 
@@ -374,17 +386,166 @@ public class SimpleTest {
 
         // 发布t2
         t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200722", false);
-        step.acquire();
+        step.acquire(2);
         TestCase.assertEquals(0, step.availablePermits());
         TestCase.assertEquals(16, counter.get());
+        
+        // 发布t2以及t2以后的任务
         t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200723", true);
-        step.acquire(2);
+        step.acquire(4);
        
         TestCase.assertEquals(0, step.availablePermits());
         TestCase.assertEquals(32, counter.get());
+        TestCase.assertEquals(3, scheduled);
         AbstractLibraTask.shutdown();
 
     }
+    
+    
+    /**
+     * 严格调度时间测试
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    @Test
+    public void careScheduleTimeTest() throws Exception {
+        clearMap();
+        RegistryHelper registryHelper = getHelper();
+        Semaphore holdOn = new Semaphore(0);
+        Semaphore step = new Semaphore(0);
+        counter = new AtomicLong(10);
+        MySchedulerTask st = new MySchedulerTask(registryHelper){
+            @Override
+            protected void loadTaskMetas() {
+                super.loadTaskMetas();
+                holdOn.release();
+            }
+            
+            @Override
+			protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
+				if ("GTS-T2".equals(taskName)) {
+					step.release();
+				}
+			}
+            
+        };
+        st.afterPropertiesSet();
+        T1 t1 = new T1(registryHelper) {
+        	
+        	private Long executeCounter = 0L;
+
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T1";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 0;
+            }
+
+            @Override
+            protected int getSplitsCount() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0/10 * * * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+                if (executeCounter < 2) {
+                	counter.addAndGet(3);
+                    executeCounter++;
+                }
+            }
+        };
+        t1.afterPropertiesSet();
+        T2 t2 = new T2(registryHelper) {
+
+        	private Long executeCounter = 0L;
+        	
+            @Override
+            public String getTaskGroup() {
+                return "GTS";
+            }
+
+            @Override
+            public String getTaskName() {
+                return "GTS-T2";
+            }
+
+            @Override
+            protected Integer getExecuteOrder() {
+                return 1;
+            }
+
+            @Override
+            protected int getSplitsCount() {
+                return 2;
+            }
+
+            @Override
+            protected String getCronExpression() {
+                return "0/15 * * * * *";
+            }
+
+            @Override
+            public void execute(int index, int splits, String taskScheduleTime) {
+            	if (executeCounter < 2) {
+                	counter.addAndGet(3);
+                    executeCounter++;
+                }
+            }
+            
+            @Override
+            protected boolean executeImmediately(String task) {
+            	boolean executeImmediately = super.executeImmediately(task);
+            	if (!executeImmediately && Thread.currentThread().getName().startsWith(getTaskName())) {
+            		try {
+						Field target = Thread.class.getDeclaredField("target");
+						target.setAccessible(true);//Thread.currentThread().getName()
+						Object targetValue = target.get(Thread.currentThread());
+						Field c = targetValue.getClass().getDeclaredField("counter");
+						c.setAccessible(true);
+						c.set(targetValue, 30);
+					} catch (Exception e) {
+						logger.error(e.getMessage(), e);
+					}
+            	}
+				return executeImmediately;
+            }
+            
+            @Override
+            protected boolean ignoreScheduleTime() {
+            	return false;
+            }
+            
+        };
+        t2.afterPropertiesSet();
+        
+        AbstractLibraTask.runScheduleTasks();
+        holdOn.acquire();
+        List<TaskMeta> gt1 = st.getTaskMetas().get(t1.getAppName()).get(t1.getTaskGroup());
+        TestCase.assertEquals(2, gt1.size());
+        TestCase.assertEquals(t1.getTaskName(), gt1.get(0).getTaskName());
+        TestCase.assertEquals(t2.getTaskName(), gt1.get(1).getTaskName());
+
+        step.acquire();
+       
+        TestCase.assertEquals(0, step.availablePermits());
+        TestCase.assertEquals(22, counter.get());
+        AbstractLibraTask.shutdown();
+
+    }
+
 
 
     public static class MySchedulerTask extends SchedulerTask {

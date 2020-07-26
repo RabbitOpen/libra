@@ -42,6 +42,11 @@ public class RegistryHelper {
      * 任务触发节点
      **/
     public static final String TASKS_EXECUTION_TRIGGER = "/tasks/execution/trigger";
+    
+    /**
+     * 运行通知节点
+     */
+    public static final String TASKS_EXECUTION_NOTIFY = "/tasks/execution/notify";
 
     /**
      * 用户任务meta信息路径
@@ -191,6 +196,7 @@ public class RegistryHelper {
         createPersistNode(TASKS_EXECUTION_USERS);
         createPersistNode(TASKS_EXECUTION_SCHEDULE);
         createPersistNode(TASKS_EXECUTION_TRIGGER);
+        createPersistNode(TASKS_EXECUTION_NOTIFY);
         // 处于执行中的任务
         createPersistNode(TASKS_EXECUTION_RUNNING);
         registerExecutor();
@@ -370,4 +376,5 @@ public class RegistryHelper {
     public void setHosts(String hosts) {
         this.hosts = hosts;
     }
+    
 }

@@ -71,7 +71,17 @@ public class TaskMeta implements Serializable {
      * @date    2020/7/15
      **/
     public Date getNextScheduleTime(Date lastCompletionTime) {
-        CronTrigger trigger = new CronTrigger(getCronExpression());
+        return getNextScheduleTime(lastCompletionTime, getCronExpression());
+    }
+    
+    /**
+     * <b>@description 获取任务下次执行时间 </b>
+     * @param lastCompletionTime
+     * @param cronExpression
+     * @return
+     */
+    public static Date getNextScheduleTime(Date lastCompletionTime, String cronExpression) {
+    	CronTrigger trigger = new CronTrigger(cronExpression);
         return trigger.nextExecutionTime(new TriggerContext() {
             @Override
             public Date lastScheduledExecutionTime() {
