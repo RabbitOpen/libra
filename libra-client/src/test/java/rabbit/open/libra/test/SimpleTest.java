@@ -385,13 +385,13 @@ public class SimpleTest {
         TestCase.assertEquals(t3.getTaskName(), gt1.get(2).getTaskName());
 
         // 发布t2
-        t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200722", false);
+        registryHelper.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200722", false);
         step.acquire(2);
         TestCase.assertEquals(0, step.availablePermits());
         TestCase.assertEquals(16, counter.get());
         
         // 发布t2以及t2以后的任务
-        t1.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200723", true);
+        registryHelper.publishTask(t1.getAppName(), t1.getTaskGroup(), t2.getTaskName(), "20200723", true);
         step.acquire(4);
        
         TestCase.assertEquals(0, step.availablePermits());

@@ -196,23 +196,6 @@ public abstract class AbstractLibraTask extends TaskPiece implements Initializin
     }
 
     /**
-     * 发布任务
-     * @param	appName
-	 * @param	groupName
-	 * @param	taskName
-	 * @param	scheduleTime
-	 * @param	group           true: 发布整组任务
-     * @author  xiaoqianbin
-     * @date    2020/7/24
-     **/
-    public void publishTask(String appName, String groupName, String taskName, String scheduleTime, boolean group) {
-        String desc = appName + "@" + groupName + "@" + taskName + "@" + scheduleTime + "@" +
-                (group ? ManualScheduleType.GROUP : ManualScheduleType.SINGLE);
-        getRegistryHelper().createPersistNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + PS + desc);
-        getRegistryHelper().writeData(RegistryHelper.TASKS_EXECUTION_TRIGGER, "go");
-    }
-
-    /**
      * 尝试获取控制权
      * @param path
      * @param mode

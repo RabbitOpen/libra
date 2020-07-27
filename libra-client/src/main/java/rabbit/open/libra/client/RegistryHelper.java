@@ -329,6 +329,23 @@ public class RegistryHelper {
     }
 
     /**
+     * 发布任务
+     * @param	appName
+     * @param	groupName
+     * @param	taskName
+     * @param	scheduleTime
+     * @param	group           true: 发布整组任务
+     * @author  xiaoqianbin
+     * @date    2020/7/24
+     **/
+    public void publishTask(String appName, String groupName, String taskName, String scheduleTime, boolean group) {
+        String desc = appName + "@" + groupName + "@" + taskName + "@" + scheduleTime + "@" +
+                (group ? ManualScheduleType.GROUP : ManualScheduleType.SINGLE);
+        createPersistNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + "/" + desc);
+        writeData(RegistryHelper.TASKS_EXECUTION_TRIGGER, "go");
+    }
+
+    /**
      * 删除节点
      * @param relative 相对于根节点的节点路径
      * @author xiaoqianbin
