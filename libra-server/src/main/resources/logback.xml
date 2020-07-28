@@ -2,7 +2,7 @@
 <configuration debug="false" scan="true" scanPeriod="1 seconds">
 
     <property name="APP" value="libra"/>
-    <property name="LOG_HOME" value="./logs"/>
+    <property name="LOG_HOME" value="/export/logs"/>
     <!--ConsoleAppender 用于在屏幕上输出日志-->
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <!--定义了一个过滤器,在LEVEL之下的日志输出不会被打印出来-->
@@ -26,7 +26,7 @@
             <pattern>%d{yy-MM-dd.HH:mm:ss.SSS} [%-16t] %-5p %-22c{0} - %m%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/${APP}_detail.log.%d{yyyyMMdd}</fileNamePattern>
+            <fileNamePattern>${LOG_HOME}/${APP}.log.%d{yyyyMMdd}</fileNamePattern>
         </rollingPolicy>
     </appender>
 
