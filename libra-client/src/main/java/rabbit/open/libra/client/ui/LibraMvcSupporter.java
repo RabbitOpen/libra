@@ -21,6 +21,7 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
 
     RabbitTransactionManager transactionManager;
 
+    @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // static resources
         registry.addResourceHandler("/libra/*").addResourceLocations("classpath:/META-INF/resources/");

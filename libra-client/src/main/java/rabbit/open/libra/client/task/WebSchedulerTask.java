@@ -1,7 +1,5 @@
 package rabbit.open.libra.client.task;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rabbit.open.libra.client.ui.entity.TaskExecutionRecord;
 import rabbit.open.libra.client.ui.service.TaskExecutionRecordService;
 import rabbit.open.orm.common.dialect.DialectType;
@@ -16,8 +14,6 @@ import java.util.Date;
  * @date 2020/7/28
  **/
 public class WebSchedulerTask extends SchedulerTask {
-
-    private Logger logger = LoggerFactory.getLogger(getClass());
 
     private DataSource dataSource;
 

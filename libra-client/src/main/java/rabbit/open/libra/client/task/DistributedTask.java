@@ -237,9 +237,9 @@ public abstract class DistributedTask extends AbstractLibraTask {
 					if (taskSemaphore.availablePermits() > 0
 							&& try2AcquireControl(path + PS + RUNNING_TASK_PREFIX + piece,
 									new ExecutionMeta(new Date(), getTaskName()), CreateMode.EPHEMERAL)) {
+						notifyTaskStarted(piece, scheduleTime);
 						deductPermits();
 						addTask(path, RUNNING_TASK_PREFIX + piece, scheduleTime);
-						notifyTaskStarted(piece, scheduleTime);
 					}
 				}
 			} catch (LibraException e) {
