@@ -6,7 +6,7 @@
 
 
     <bean id="registryHelper" class="rabbit.open.libra.client.RegistryHelper">
-        <property name="rootPath" value="/megrez/loan"/>
+        <property name="namespace" value="/megrez/loan"/>
         <property name="hosts" value="10.9.10.69:2181"/>
     </bean>
 

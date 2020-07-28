@@ -81,7 +81,7 @@ public class SimpleTest {
 
     private RegistryHelper getHelper() {
         RegistryHelper registryHelper = new RegistryHelper();
-        registryHelper.setRootPath("/libra/simple-test");
+        registryHelper.setNamespace("/libra/simple-test");
         registryHelper.setHosts("localhost:2181");
         ZkClient zkClient = new ZkClient("localhost:2181");
         zkClient.deleteRecursive("/libra/simple-test");

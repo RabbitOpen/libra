@@ -37,7 +37,7 @@ public class LibraTest {
     public void helperTest() {
         RegistryHelper helper = new RegistryHelper();
         helper.setHosts("localhost:2181");
-        helper.setRootPath("/libra/root");
+        helper.setNamespace("/libra/root");
         helper.init();
         String path = "/hello/li/si/sd";
         TestCase.assertTrue(!helper.exists(path));
@@ -59,7 +59,7 @@ public class LibraTest {
     public void eventTest() throws InterruptedException {
         RegistryHelper helper = new RegistryHelper();
         helper.setHosts("localhost:2181");
-        helper.setRootPath("/libra/root");
+        helper.setNamespace("/libra/root");
         helper.init();
         helper.deleteNode("/event");
         helper.createPersistNode("/event");
@@ -91,7 +91,7 @@ public class LibraTest {
     public void multiThreadTest() throws InterruptedException {
         RegistryHelper helper = new RegistryHelper();
         helper.setHosts("localhost:2181");
-        helper.setRootPath("/libra/root");
+        helper.setNamespace("/libra/root");
         helper.init();
         int count = 20;
         CountDownLatch cdl = new CountDownLatch(count);

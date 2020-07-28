@@ -64,8 +64,8 @@ public class RegistryHelper {
     private String hosts;
 
     // 监控根节点
-    @Value("${libra.monitor.root-path:/libra/root}")
-    private String rootPath;
+    @Value("${libra.monitor.namespace:/libra/root}")
+    private String namespace;
 
     private ZkClient client;
 
@@ -79,8 +79,8 @@ public class RegistryHelper {
      * @author xiaoqianbin
      * @date 2020/7/13
      **/
-    private void createRootPath() {
-        createPersistNode(rootPath, null, CreateMode.PERSISTENT, true);
+    private void createNamespace() {
+        createPersistNode(namespace, null, CreateMode.PERSISTENT, true);
     }
 
     /**
@@ -101,7 +101,7 @@ public class RegistryHelper {
      * @date    2020/7/16
      **/
     public void createPersistNode(String relativePath, boolean ignoreError) {
-        createPersistNode(rootPath + relativePath, null, CreateMode.PERSISTENT, ignoreError);
+        createPersistNode(namespace + relativePath, null, CreateMode.PERSISTENT, ignoreError);
     }
 
     /**
@@ -113,7 +113,7 @@ public class RegistryHelper {
      * @date    2020/7/16
      **/
     public void createPersistNode(String relativePath, Object data, boolean ignoreError) {
-        createPersistNode(rootPath + relativePath, data, CreateMode.PERSISTENT, ignoreError);
+        createPersistNode(namespace + relativePath, data, CreateMode.PERSISTENT, ignoreError);
     }
 
     /**
@@ -173,8 +173,8 @@ public class RegistryHelper {
      **/
     public String replaceNode(String relative, Object data, CreateMode mode) {
         removeNode(relative);
-        createPersistNode(rootPath + relative, data, mode, true);
-        return rootPath + relative;
+        createPersistNode(namespace + relative, data, mode, true);
+        return namespace + relative;
     }
 
 
@@ -186,7 +186,7 @@ public class RegistryHelper {
     @PostConstruct
     public void init() {
         client = new ZkClient(hosts);
-        createRootPath();
+        createNamespace();
         createPersistNode("/executors");
         createPersistNode("/tasks");
         createPersistNode("/tasks/meta");
@@ -210,7 +210,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public void subscribeChildChanges(String relativePath, IZkChildListener listener) {
-        client.subscribeChildChanges(rootPath + relativePath, listener);
+        client.subscribeChildChanges(namespace + relativePath, listener);
     }
 
     /**
@@ -221,7 +221,7 @@ public class RegistryHelper {
      * @date    2020/7/24
      **/
     public void subscribeDataChanges(String relativePath, IZkDataListener listener) {
-        client.subscribeDataChanges(rootPath + relativePath, listener);
+        client.subscribeDataChanges(namespace + relativePath, listener);
     }
 
     /**
@@ -242,7 +242,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public void unsubscribeChildChanges(String relativePath, IZkChildListener listener) {
-        client.unsubscribeChildChanges(rootPath + relativePath, listener);
+        client.unsubscribeChildChanges(namespace + relativePath, listener);
     }
 
     /**
@@ -266,7 +266,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public boolean exists(String relativePath) {
-        return client.exists(rootPath + relativePath);
+        return client.exists(namespace + relativePath);
     }
 
     /**
@@ -294,7 +294,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public String create(String path, Object data, CreateMode mode) {
-        return client.create(rootPath + path, data, mode);
+        return client.create(namespace + path, data, mode);
     }
 
     /**
@@ -304,7 +304,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public <T> T readData(String relativePath) {
-        return client.readData(rootPath + relativePath);
+        return client.readData(namespace + relativePath);
     }
 
     /**
@@ -315,7 +315,7 @@ public class RegistryHelper {
      * @date    2020/7/24
      **/
     public void writeData(String relativePath, Object data) {
-        client.writeData(rootPath + relativePath, data);
+        client.writeData(namespace + relativePath, data);
     }
 
     /**
@@ -325,7 +325,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public List<String> getChildren(String relativePath) {
-        return client.getChildren(rootPath + relativePath);
+        return client.getChildren(namespace + relativePath);
     }
 
     /**
@@ -352,8 +352,8 @@ public class RegistryHelper {
      * @date 2020/7/11
      **/
     private void removeNode(String relative) {
-        if (client.exists(rootPath + relative)) {
-            client.delete(rootPath + relative);
+        if (client.exists(namespace + relative)) {
+            client.delete(namespace + relative);
         }
     }
 
@@ -364,7 +364,7 @@ public class RegistryHelper {
      * @date 2020/7/14
      **/
     public void deleteNode(String relativePath) {
-        client.deleteRecursive(rootPath + relativePath);
+        client.deleteRecursive(namespace + relativePath);
     }
 
     /**
@@ -374,7 +374,7 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public void delete(String relative) {
-        client.delete(rootPath + relative);
+        client.delete(namespace + relative);
     }
 
     /**
@@ -386,8 +386,8 @@ public class RegistryHelper {
         client.unsubscribeAll();
     }
 
-    public void setRootPath(String rootPath) {
-        this.rootPath = rootPath;
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 
     public void setHosts(String hosts) {
