@@ -40,6 +40,11 @@
                 <version>2.1.0.RELEASE</version>
             </dependency>
             <dependency>
+                <groupId>rabbit.open</groupId>
+                <artifactId>rabbit-orm-core</artifactId>
+                <version>3.3.2</version>
+            </dependency>
+            <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>3.1.0</version><!--$NO-MVN-MAN-VER$-->
@@ -57,13 +62,23 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>rabbit.open</groupId>
-                <artifactId>rabbit-orm-core</artifactId>
-                <version>3.3.0</version>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>${spring.mvc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
+                <artifactId>spring-tx</artifactId>
+                <version>${spring.mvc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-jdbc</artifactId>
+                <version>${spring.mvc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webmvc</artifactId>
                 <version>${spring.mvc.version}</version>
             </dependency>
             <dependency>

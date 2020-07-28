@@ -7,10 +7,62 @@
 
     <bean id="registryHelper" class="rabbit.open.libra.client.RegistryHelper">
         <property name="namespace" value="/megrez/loan"/>
-        <property name="hosts" value="10.9.10.69:2181"/>
+        <property name="hosts" value="localhost:2181"/>
     </bean>
 
-    <bean id="schedulerTask" class="rabbit.open.libra.client.task.SchedulerTask"></bean>
+    <!--<bean id="schedulerTask" class="rabbit.open.libra.client.task.SchedulerTask"></bean>-->
+
+    <!--有web界面的调度器-->
+    <bean id="webSchedulerTask" class="rabbit.open.libra.client.task.WebSchedulerTask">
+        <property name="dataSource" ref="rabbit"/>
+        <property name="dialectType" value="${jdbc.dialect}"/>
+    </bean>
+
+
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath*:jdbc.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="rabbit" class="rabbit.open.orm.datasource.RabbitDataSource">
+        <property name="driverClass">
+            <value>${jdbc.driverName}</value>
+        </property>
+        <property name="url">
+            <value>${jdbc.url}</value>
+        </property>
+        <property name="username">
+            <value>${jdbc.username}</value>
+        </property>
+        <property name="password">
+            <value>${jdbc.password}</value>
+        </property>
+        <property name="maxSize">
+            <value>${jdbc.maxSize}</value>
+        </property>
+        <property name="minSize">
+            <value>${jdbc.minSize}</value>
+        </property>
+        <property name="maxIdle">
+            <value>${jdbc.maxIdle}</value>
+        </property>
+        <property name="showSlowSql">
+            <value>${jdbc.showSlowSql}</value>
+        </property>
+        <property name="threshold">
+            <value>${jdbc.threshold}</value>
+        </property>
+        <!-- 获取连接等待时间(ms)默认500ms，超过这个时间就会尝试新建连接 -->
+        <property name="fetchTimeOut">
+            <value>${jdbc.fetchTimeOut}</value>
+        </property>
+        <property name="maxCachedStmt">
+            <value>20</value>
+        </property>
+    </bean>
 
 </beans>	
 

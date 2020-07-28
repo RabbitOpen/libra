@@ -3,6 +3,7 @@ package rabbit.open.libra;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportResource;
+import rabbit.open.libra.client.annotation.EnableLibraWebUI;
 
 /**
  * 调度服务端入口程序
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.ImportResource;
  **/
 @SpringBootApplication
 @ImportResource(locations = {"classpath*:applicationContext.xml"})
+@EnableLibraWebUI
 public class LibraEntry {
 
     public static void main(String[] args) {

@@ -1,6 +1,10 @@
 spring:
   main:
     allow-bean-definition-overriding: true
+  mvc:
+    view:
+      prefix: /static/
+      suffix: .html
 server:
   port: 8888
 
@@ -13,6 +17,6 @@ zookeeper:
 #task 监控根节点
 libra:
   monitor:
-    root-path: /libra/root
+    namespace: /libra/root
 
 
