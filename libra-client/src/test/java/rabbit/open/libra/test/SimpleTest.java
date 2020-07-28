@@ -121,7 +121,7 @@ public class SimpleTest {
             }
 
             @Override
-            protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
+            public void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
                 if ("GTS-T3".equals(taskName)) {
                 	logger.info("whole group[{}] is finished", group);
                 	step.release();
@@ -267,13 +267,13 @@ public class SimpleTest {
             }
 
             @Override
-            protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
+            public void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
                 logger.info("task [{}-{}-{}] is finished", group, taskName, scheduleTime);
                 step.release();
             }
             
             @Override
-            protected void onTaskStarted(String appName, String group, String taskName, String scheduleTime) {
+            public void onTaskStarted(String appName, String group, String taskName, String scheduleTime) {
             	
             	logger.info("taskxxx {} started", taskName);
             	scheduled++;
@@ -422,7 +422,7 @@ public class SimpleTest {
             }
             
             @Override
-			protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
+            public void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
 				if ("GTS-T2".equals(taskName)) {
 					step.release();
 				}

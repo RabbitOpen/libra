@@ -1,20 +1,5 @@
 package rabbit.open.libra.client.task;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
@@ -22,11 +7,21 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
-
 import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.ManualScheduleType;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * 调度任务，分布式任务的调度核心，负责调度所有其他任务
@@ -788,32 +783,6 @@ public class SchedulerTask extends AbstractLibraTask {
      **/
     protected void postPublish(String appName, String group, String taskName, String scheduleTime) {
         // TO DO: record this publish
-    }
-
-    /**
-     * 任务完成了
-     * @param	appName
-	 * @param	group
-	 * @param	taskName
-	 * @param	scheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/20
-     **/
-    protected void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
-        // TO DO: record this execution
-    }
-    
-    /**
-     * 任务开始了
-     * @param	appName
-	 * @param	group
-	 * @param	taskName
-	 * @param	scheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/20
-     **/
-    protected void onTaskStarted(String appName, String group, String taskName, String scheduleTime) {
-        // TO DO: record this execution
     }
 
     /**

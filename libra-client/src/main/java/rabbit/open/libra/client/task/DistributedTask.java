@@ -131,6 +131,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
             getRegistryHelper().deleteNode(task.getPath() + PS + task.getNode());
             String[] split = task.getPath().split(PS);
             Map<Boolean, List<String>> executeInfo = getExecuteInfo(split[split.length - 1]);
+            onTaskCompleted(getAppName(), getTaskGroup(), getTaskName(), split[split.length - 1]);
             if (executeInfo.containsKey(false) && executeInfo.get(false).size() == getSplitsCount()) {
                 logger.info("{} finished", getTaskName());
             }

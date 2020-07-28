@@ -9,8 +9,6 @@ import rabbit.open.orm.common.ddl.DDLType;
 import rabbit.open.orm.core.dml.SessionFactory;
 import rabbit.open.orm.core.spring.RabbitTransactionManager;
 
-import javax.annotation.Resource;
-
 /**
  * web页面支持
  * @author xiaoqianbin
@@ -18,9 +16,6 @@ import javax.annotation.Resource;
  **/
 @Configuration
 public class LibraMvcSupporter implements WebMvcConfigurer {
-
-    @Resource
-    private WebSchedulerTask webSchedulerTask;
 
     SessionFactory sessionFactory;
 
@@ -32,7 +27,7 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
     }
 
     @Bean(initMethod = "setUp", destroyMethod = "destroy")
-    public SessionFactory sessionFactory() {
+    public SessionFactory sessionFactory(WebSchedulerTask webSchedulerTask) {
         if (null == sessionFactory) {
             sessionFactory = new SessionFactory();
             sessionFactory.setDataSource(webSchedulerTask.getDataSource());

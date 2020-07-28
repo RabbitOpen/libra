@@ -128,7 +128,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <!-- 指定SpringBoot程序的main函数入口类 -->
-                    <mainClass>rabbit.open.libra.LibraEntry</mainClass>
+                    <mainClass>rabbit.open.test.LibraEntry</mainClass>
                     <finalName>${project.artifactId}</finalName>
                 </configuration>
                 <executions>

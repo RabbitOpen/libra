@@ -1,6 +1,7 @@
 package rabbit.open.libra.client.annotation;
 
 import org.springframework.context.annotation.Import;
+import rabbit.open.libra.client.SpringContextMonitor;
 import rabbit.open.libra.client.ui.LibraController;
 import rabbit.open.libra.client.ui.LibraMvcSupporter;
 import rabbit.open.libra.client.ui.service.TaskExecutionRecordService;
@@ -17,7 +18,7 @@ import java.lang.annotation.Target;
  **/
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({LibraMvcSupporter.class, LibraController.class,
+@Import({LibraMvcSupporter.class, LibraController.class, SpringContextMonitor.class,
         TaskExecutionRecordService.class})
 public @interface EnableLibraWebUI {
 }

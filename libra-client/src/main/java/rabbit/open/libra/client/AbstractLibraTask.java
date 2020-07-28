@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author xiaoqianbin
  * @date 2020/7/11
  **/
-public abstract class AbstractLibraTask extends TaskPiece implements InitializingBean {
+public abstract class AbstractLibraTask extends TaskPiece  implements LibraEvent, InitializingBean {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
