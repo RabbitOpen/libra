@@ -2,6 +2,7 @@ package rabbit.open.libra.client.task;
 
 import rabbit.open.libra.client.ui.entity.TaskExecutionRecord;
 import rabbit.open.libra.client.ui.service.TaskExecutionRecordService;
+import rabbit.open.orm.common.ddl.DDLType;
 import rabbit.open.orm.common.dialect.DialectType;
 
 import javax.annotation.Resource;
@@ -18,6 +19,10 @@ public class WebSchedulerTask extends SchedulerTask {
     private DataSource dataSource;
 
     private DialectType dialectType;
+
+    private boolean showSql = false;
+
+    private DDLType ddlType = DDLType.UPDATE;
 
     @Resource
     private TaskExecutionRecordService recordService;
@@ -65,4 +70,19 @@ public class WebSchedulerTask extends SchedulerTask {
         this.dataSource = dataSource;
     }
 
+    public boolean isShowSql() {
+        return showSql;
+    }
+
+    public void setShowSql(boolean showSql) {
+        this.showSql = showSql;
+    }
+
+    public DDLType getDdlType() {
+        return ddlType;
+    }
+
+    public void setDdlType(String ddlType) {
+        this.ddlType = DDLType.valueOf(ddlType.toUpperCase());
+    }
 }

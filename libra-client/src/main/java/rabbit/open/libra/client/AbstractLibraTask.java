@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author xiaoqianbin
  * @date 2020/7/11
  **/
-public abstract class AbstractLibraTask extends TaskPiece  implements LibraEvent, InitializingBean {
+public abstract class AbstractLibraTask extends TaskPiece implements LibraEvent, InitializingBean {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -134,8 +134,8 @@ public abstract class AbstractLibraTask extends TaskPiece  implements LibraEvent
 
     /**
      * 关闭zk
-     * @author  xiaoqianbin
-     * @date    2020/7/24
+     * @author xiaoqianbin
+     * @date 2020/7/24
      **/
     private static void closeZookeeper() {
         try {
@@ -149,8 +149,8 @@ public abstract class AbstractLibraTask extends TaskPiece  implements LibraEvent
 
     /**
      * 关闭普通任务
-     * @author  xiaoqianbin
-     * @date    2020/7/16
+     * @author xiaoqianbin
+     * @date 2020/7/16
      **/
     private static void closeUserTasks() {
         for (Map<String, List<TaskMeta>> map : taskMetaCache.values()) {
@@ -168,8 +168,8 @@ public abstract class AbstractLibraTask extends TaskPiece  implements LibraEvent
 
     /**
      * 关闭调度任务
-     * @author  xiaoqianbin
-     * @date    2020/7/16
+     * @author xiaoqianbin
+     * @date 2020/7/16
      **/
     private static void closeScheduleTasks() {
         Map<String, List<TaskMeta>> taskMetaCache = getTaskMetaCache(DEFAULT_APP);
@@ -184,7 +184,7 @@ public abstract class AbstractLibraTask extends TaskPiece  implements LibraEvent
 
     /**
      * 安全退出任务
-     * @param    task
+     * @param task
      * @author xiaoqianbin
      * @date 2020/7/13
      **/

@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.execution;
+package rabbit.open.libra.client.meta;
 
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -22,7 +22,6 @@ public class ExecutionMeta implements Serializable {
     /**
      * 构造函数
      * @param	start
-	 * @param	end
 	 * @param	taskName
      * @author  xiaoqianbin
      * @date    2020/7/13

@@ -1,7 +1,5 @@
 package rabbit.open.test;
 
-import org.I0Itec.zkclient.ZkClient;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +10,9 @@ import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.WebSchedulerTask;
 
-import java.sql.Time;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * WebSchedulerTask  单元测试
@@ -39,14 +37,13 @@ public class WebSchedulerTest {
         task.setRegistryHelper(helper);
         task.afterPropertiesSet();
         semaphore = new Semaphore(0);
+        helper.publishTask(task.getAppName(), task.getTaskGroup(), task.getTaskName(), new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()), false);
         semaphore.acquire();
     }
 
     public static class SimpleTask extends DistributedTask {
 
         private RegistryHelper registryHelper;
-
-        private Semaphore hold = new Semaphore(0);
 
         public void setRegistryHelper(RegistryHelper registryHelper) {
             this.registryHelper = registryHelper;
@@ -60,26 +57,16 @@ public class WebSchedulerTest {
         @Override
         public void execute(int index, int splits, String taskScheduleTime) {
             logger.info("run {}", getTaskName());
-            try {
-                hold.tryAcquire(2, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
         }
 
         @Override
         public void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
-            try {
-                hold.tryAcquire(2, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
             semaphore.release();
         }
 
         @Override
         protected String getCronExpression() {
-            return "0/5 * * * * *";
+            return "0 0 0 * * *";
         }
     }
 }

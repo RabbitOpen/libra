@@ -32,4 +32,30 @@ public interface LibraEvent {
     default void onTaskStarted(String appName, String group, String taskName, String scheduleTime) {
         // TO DO: record this execution
     }
+
+    /**
+     * 发布任务前
+     * @param	appName
+     * @param	group
+     * @param	taskName
+     * @param	scheduleTime
+     * @author  xiaoqianbin
+     * @date    2020/7/19
+     **/
+    default void prePublish(String appName, String group, String taskName, String scheduleTime) {
+        // TO DO: record this publish
+    }
+
+    /**
+     * 发布任务后
+     * @param	appName
+     * @param	group
+     * @param	taskName
+     * @param	scheduleTime
+     * @author  xiaoqianbin
+     * @date    2020/7/19
+     **/
+    default void postPublish(String appName, String group, String taskName, String scheduleTime) {
+        // TO DO: record this publish
+    }
 }

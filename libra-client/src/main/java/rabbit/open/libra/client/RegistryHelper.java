@@ -177,7 +177,6 @@ public class RegistryHelper {
         return namespace + relative;
     }
 
-
     /**
      * 初始化目录节点
      * @author xiaoqianbin
@@ -393,5 +392,8 @@ public class RegistryHelper {
     public void setHosts(String hosts) {
         this.hosts = hosts;
     }
-    
+
+    public ZkClient getClient() {
+        return client;
+    }
 }

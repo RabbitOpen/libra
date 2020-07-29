@@ -16,6 +16,8 @@
     <bean id="webSchedulerTask" class="rabbit.open.libra.client.task.WebSchedulerTask">
         <property name="dataSource" ref="rabbit"/>
         <property name="dialectType" value="${jdbc.dialect}"/>
+        <property name="showSql" value="true"/>
+        <property name="ddlType" value="CREATE"/>
     </bean>
 
 

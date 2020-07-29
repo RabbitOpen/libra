@@ -8,7 +8,6 @@ import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.execution.ExecutableTask;
-import rabbit.open.libra.client.execution.ExecutionMeta;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -235,9 +234,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
 				List<String> leftPieces = getAvailablePieces(groups);
 				for (String piece : leftPieces) {
 					if (taskSemaphore.availablePermits() > 0
-							&& try2AcquireControl(path + PS + RUNNING_TASK_PREFIX + piece,
-									new ExecutionMeta(new Date(), getTaskName()), CreateMode.EPHEMERAL)) {
-						notifyTaskStarted(piece, scheduleTime);
+							&& try2AcquireControl(path + PS + RUNNING_TASK_PREFIX + piece, null, CreateMode.EPHEMERAL)) {
 						deductPermits();
 						addTask(path, RUNNING_TASK_PREFIX + piece, scheduleTime);
 					}
@@ -251,21 +248,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
     }
 
 	/**
-	 * <b>@description 通知调度节点，任务开始执行了 </b>
-	 * @param piece
-	 * @param scheduleTime
-	 */
-	private void notifyTaskStarted(String piece, String scheduleTime) {
-		if (!"0".equals(piece)) {
-			return;
-		}
-		String nodeName = getAppName() + "@" + getTaskGroup() + "@" + getTaskName() + "@" + scheduleTime;
-		getRegistryHelper().createPersistNode(RegistryHelper.TASKS_EXECUTION_NOTIFY + PS + nodeName);
-		getRegistryHelper().writeData(RegistryHelper.TASKS_EXECUTION_NOTIFY, "new task started");
-	}
-
-    
-	/**
 	 * <b>@description 判断是否需要立即调度任务 </b>
 	 * @param task
 	 * @return
@@ -274,9 +256,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
 		ManualScheduleType type = getRegistryHelper().readData(taskNodePath + PS + task);
 		if (null != type) {
 			// 手动触发的任务都是立刻执行，忽略掉本身的调度时间
-			return true;
-		}
-		if (ignoreScheduleTime()) {
 			return true;
 		}
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -304,14 +283,6 @@ public abstract class DistributedTask extends AbstractLibraTask {
         }
     }
 
-    /**
-     * <b>@description 编排调度时是否忽略自身的调度时间 </b>
-     * @return
-     */
-    protected boolean ignoreScheduleTime() {
-    	return true;
-    }
-    
     /**
      * 添加任务到任务列表
      * @param	path

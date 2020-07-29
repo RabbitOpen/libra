@@ -2,10 +2,10 @@ package rabbit.open.libra.client.ui;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import rabbit.open.libra.client.task.WebSchedulerTask;
-import rabbit.open.orm.common.ddl.DDLType;
 import rabbit.open.orm.core.dml.SessionFactory;
 import rabbit.open.orm.core.spring.RabbitTransactionManager;
 
@@ -27,13 +27,14 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
         registry.addResourceHandler("/libra/*").addResourceLocations("classpath:/META-INF/resources/");
     }
 
+    @Scope("singleton")
     @Bean(initMethod = "setUp", destroyMethod = "destroy")
     public SessionFactory sessionFactory(WebSchedulerTask webSchedulerTask) {
         if (null == sessionFactory) {
             sessionFactory = new SessionFactory();
             sessionFactory.setDataSource(webSchedulerTask.getDataSource());
-            sessionFactory.setShowSql(true);
-            sessionFactory.setDdl(DDLType.UPDATE.name());
+            sessionFactory.setShowSql(webSchedulerTask.isShowSql());
+            sessionFactory.setDdl(webSchedulerTask.getDdlType().name());
             sessionFactory.setFormatSql(true);
             sessionFactory.setDialect(webSchedulerTask.getDialectType().name());
             sessionFactory.setPackages2Scan("rabbit.open.libra.client.ui");
@@ -41,6 +42,7 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
         return sessionFactory;
     }
 
+    @Scope("singleton")
     @Bean
     public RabbitTransactionManager transactionManager(SessionFactory factory) {
         if (null == transactionManager) {

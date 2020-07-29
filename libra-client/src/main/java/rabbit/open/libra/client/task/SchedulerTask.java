@@ -255,9 +255,6 @@ public class SchedulerTask extends AbstractLibraTask {
 
         // 添加手动任务监听器
         addManualTaskListener();
-        
-        // 监听任务已经开始执行
-        addTaskStartedListener();
 
         // 尝试恢复未完成的任务
         recoverUnFinishedTasks();
@@ -288,46 +285,6 @@ public class SchedulerTask extends AbstractLibraTask {
             helper.subscribeDataChanges(RegistryHelper.TASKS_EXECUTION_TRIGGER, manualTaskListener);
             manualTaskChanged();
         }
-    }
-    
-    /**
-     * <b>@description 监听任务开始执行 </b>
-     */
-    private void addTaskStartedListener() {
-    	if (!dataChangeListenerMap.containsKey(RegistryHelper.TASKS_EXECUTION_NOTIFY)) {
-            IZkDataListener manualTaskListener = new IZkDataListener() {
-                @Override
-                public void handleDataChange(String path, Object o) {
-                	taskStarted();
-                }
-
-                @Override
-                public void handleDataDeleted(String s) {
-                    // nobody cares this branch
-                }
-            };
-            dataChangeListenerMap.put(RegistryHelper.TASKS_EXECUTION_NOTIFY, manualTaskListener);
-            helper.subscribeDataChanges(RegistryHelper.TASKS_EXECUTION_NOTIFY, manualTaskListener);
-            taskStarted();
-        }
-    }
-    
-    /**
-     * <b>@description 有新任务开始执行了 </b>
-     */
-    private void taskStarted() {
-    	synchronized (dataChangeListenerMap) {
-    		List<String> children = helper.getChildren(RegistryHelper.TASKS_EXECUTION_NOTIFY);
-        	for (String child : children) {
-        		String[] split = child.split("@");
-        		String appName = split[0];
-                String group = split[1];
-                String taskName = split[2];
-                String schedule = split[3];
-                onTaskStarted(appName, group, taskName, schedule);
-                helper.delete(RegistryHelper.TASKS_EXECUTION_NOTIFY + PS + child);
-        	}
-		}
     }
     
     /**
@@ -388,11 +345,25 @@ public class SchedulerTask extends AbstractLibraTask {
         logger.info("task group[{}] is scheduled at [{}]", group, schedule);
         helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
         // 创建执行信息
-        prePublish(appName, group, taskName, schedule);
+        onCreateExecuteNode(appName, group, taskName, schedule);
         helper.createPersistNode(taskPath + PS + schedule, ManualScheduleType.valueOf(type), true);
-        prePublish(appName, group, taskName, schedule);
+        postPublish(appName, group, taskName, schedule);
         addExecutionListener(group, taskName, schedule, appName);
         helper.deleteNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + PS + task);
+    }
+
+    /**
+     * 创建执行节点前置操作
+     * @param	appName
+	 * @param	group
+	 * @param	taskName
+	 * @param	schedule
+     * @author  xiaoqianbin
+     * @date    2020/7/29
+     **/
+    private void onCreateExecuteNode(String appName, String group, String taskName, String schedule) {
+        prePublish(appName, group, taskName, schedule);
+        onTaskStarted(appName, group, taskName, schedule);
     }
 
     /**
@@ -497,9 +468,9 @@ public class SchedulerTask extends AbstractLibraTask {
             logger.info("task group[{}] is scheduled at [{}]", group, schedule);
             String executePath = taskPath + PS + schedule;
             // 创建执行信息
-            prePublish(appName, group, taskName, schedule);
+            onCreateExecuteNode(appName, group, taskName, schedule);
             helper.createPersistNode(executePath);
-            prePublish(appName, group, taskName, schedule);
+            postPublish(appName, group, taskName, schedule);
             addExecutionListener(group, taskName, schedule, appName);
             groupScheduleMap.remove(group);
             doHistoryClean(taskPath, appName, taskName, group);
@@ -749,40 +720,14 @@ public class SchedulerTask extends AbstractLibraTask {
             String execPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + taskName + PS + scheduleTime;
             if (!getRegistryHelper().exists(execPath)) {
                 // schedule节点中有数据，运行节点没数据
-                prePublish(appName, group, taskName, scheduleTime);
-                getRegistryHelper().createPersistNode(execPath);
+                onCreateExecuteNode(appName, group, taskName, scheduleTime);
+                helper.createPersistNode(execPath);
                 postPublish(appName, group, taskName, scheduleTime);
             }
             addExecutionListener(group, taskName, scheduleTime, appName);
             // 检测下任务的完成状态，如果完成了，需要更新下执行节点
             checkSchedulingStatus(group, taskName, scheduleTime, appName);
         }
-    }
-
-    /**
-     * 发布任务前
-     * @param	appName
-	 * @param	group
-	 * @param	taskName
-	 * @param	scheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/19
-     **/
-    protected void prePublish(String appName, String group, String taskName, String scheduleTime) {
-        // TO DO: record this publish
-    }
-
-    /**
-     * 发布任务后
-     * @param	appName
-     * @param	group
-     * @param	taskName
-     * @param	scheduleTime
-     * @author  xiaoqianbin
-     * @date    2020/7/19
-     **/
-    protected void postPublish(String appName, String group, String taskName, String scheduleTime) {
-        // TO DO: record this publish
     }
 
     /**
@@ -857,8 +802,8 @@ public class SchedulerTask extends AbstractLibraTask {
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
                 String taskPath = RegistryHelper.TASKS_EXECUTION_USERS + PS + appName + PS + nextTask;
                 String nextExecPath = taskPath + PS + scheduleTime;
-                prePublish(appName, group, nextTask, scheduleTime);
-                getRegistryHelper().createPersistNode(nextExecPath, triggerType, false);
+                onCreateExecuteNode(appName, group, nextTask, scheduleTime);
+                helper.createPersistNode(nextExecPath, triggerType, false);
                 postPublish(appName, group, nextTask, scheduleTime);
                 logger.info("task [{} - {}] is published", nextTask, scheduleTime);
                 // 注册下个节点的监听事件
