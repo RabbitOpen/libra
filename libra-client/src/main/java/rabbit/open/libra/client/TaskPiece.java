@@ -1,5 +1,7 @@
 package rabbit.open.libra.client;
 
+import rabbit.open.libra.client.meta.ScheduleContext;
+
 /**
  * 抽象分片任务
  * @author xiaoqianbin
@@ -79,13 +81,11 @@ public abstract class TaskPiece {
 
     /**
      * 执行任务
-     * @param	index           分片任务id
-	 * @param	splits          任务的总并发度
-	 * @param	taskScheduleTime     yyyyMMddHHmmss
+     * @param	context
      * @author  xiaoqianbin
      * @date    2020/7/10
      **/
-    public abstract void execute(int index, int splits, String taskScheduleTime);
+    public abstract void execute(ScheduleContext context);
 
     /**
      * 关闭任务

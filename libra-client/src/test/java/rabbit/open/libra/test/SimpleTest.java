@@ -8,6 +8,7 @@ import org.junit.runners.JUnit4;
 import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.TaskMeta;
+import rabbit.open.libra.client.meta.ScheduleContext;
 import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.SchedulerTask;
 
@@ -157,7 +158,7 @@ public class SimpleTest {
             }
 
             @Override
-            public void execute(int index, int splits, String taskScheduleTime) {
+            public void execute(ScheduleContext context) {
                 counter.addAndGet(3);
             }
         };
@@ -190,7 +191,7 @@ public class SimpleTest {
             }
 
             @Override
-            public void execute(int index, int splits, String taskScheduleTime) {
+            public void execute(ScheduleContext context) {
                 counter.addAndGet(3);
             }
         };
@@ -218,7 +219,7 @@ public class SimpleTest {
             }
 
             @Override
-            public void execute(int index, int splits, String taskScheduleTime) {
+            public void execute(ScheduleContext context) {
                 counter.addAndGet(10);
             }
         };
@@ -304,7 +305,7 @@ public class SimpleTest {
             }
 
             @Override
-            public void execute(int index, int splits, String taskScheduleTime) {
+            public void execute(ScheduleContext context) {
                 counter.addAndGet(3);
             }
         };
@@ -338,7 +339,7 @@ public class SimpleTest {
             }
 
             @Override
-            public void execute(int index, int splits, String taskScheduleTime) {
+            public void execute(ScheduleContext context) {
                 counter.addAndGet(3);
             }
         };
@@ -366,7 +367,7 @@ public class SimpleTest {
             }
 
             @Override
-            public void execute(int index, int splits, String taskScheduleTime) {
+            public void execute(ScheduleContext context) {
                 counter.addAndGet(10);
             }
         };
@@ -427,7 +428,7 @@ public class SimpleTest {
         }
 
         @Override
-        public void execute(int index, int splits, String taskScheduleTime) {
+        public void execute(ScheduleContext context) {
 
         }
 
@@ -457,7 +458,7 @@ public class SimpleTest {
         }
 
         @Override
-        public void execute(int index, int splits, String taskScheduleTime) {
+        public void execute(ScheduleContext context) {
 
         }
 
@@ -491,7 +492,7 @@ public class SimpleTest {
         }
 
         @Override
-        public void execute(int index, int splits, String taskScheduleTime) {
+        public void execute(ScheduleContext context) {
 
         }
 
@@ -520,7 +521,7 @@ public class SimpleTest {
         }
 
         @Override
-        public void execute(int index, int splits, String taskScheduleTime) {
+        public void execute(ScheduleContext context) {
 
         }
 

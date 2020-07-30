@@ -11,6 +11,7 @@ import rabbit.open.libra.client.AbstractLibraTask;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.ScheduleType;
 import rabbit.open.libra.client.TaskMeta;
+import rabbit.open.libra.client.meta.ScheduleContext;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -110,14 +111,12 @@ public class SchedulerTask extends AbstractLibraTask {
 
     /**
      * 执行任务
-     * @param index
-     * @param splits
-     * @param taskScheduleTime
+     * @param context
      * @author xiaoqianbin
      * @date 2020/7/13
      **/
     @Override
-    public void execute(int index, int splits, String taskScheduleTime) {
+    public void execute(ScheduleContext context) {
         if (mutex.getAndAdd(1L) > 1) {
             return;
         }

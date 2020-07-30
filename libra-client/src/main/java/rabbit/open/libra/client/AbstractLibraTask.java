@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.CollectionUtils;
+import rabbit.open.libra.client.meta.ScheduleContext;
 import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.net.InetAddress;
@@ -112,7 +113,7 @@ public abstract class AbstractLibraTask extends TaskPiece implements LibraEvent,
         }
         List<TaskMeta> scheduleTasks = appMap.get(SchedulerTask.SCHEDULE_GROUP);
         if (!CollectionUtils.isEmpty(scheduleTasks)) {
-            scheduleTasks.forEach(t -> t.getTaskPiece().execute(0, 1, null));
+            scheduleTasks.forEach(t -> t.getTaskPiece().execute(new ScheduleContext()));
         }
     }
 

@@ -8,6 +8,7 @@ import rabbit.open.libra.client.ScheduleType;
 import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.execution.ExecutableTask;
+import rabbit.open.libra.client.meta.ScheduleContext;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -217,14 +218,14 @@ public abstract class DistributedTask extends AbstractLibraTask {
 
     /**
      * 尝试获取处于调度状态的任务
-     * @param	scheduleTImes
+     * @param	scheduleTimes
      * @author  xiaoqianbin
      * @date    2020/7/14
      **/
-    private void tryAcquireUnFinishedTasks(List<String> scheduleTImes) {
-		scheduleTImes.sort(String::compareTo);
-		for (int i = 0; i < scheduleTImes.size(); i++) {
-			String scheduleTime = scheduleTImes.get(i);
+    private void tryAcquireUnFinishedTasks(List<String> scheduleTimes) {
+		scheduleTimes.sort(String::compareTo);
+		for (int i = 0; i < scheduleTimes.size(); i++) {
+			String scheduleTime = scheduleTimes.get(i);
 			String path = taskNodePath + PS + scheduleTime;
 			if (!executeImmediately(scheduleTime)) {
 				continue;
@@ -291,9 +292,10 @@ public abstract class DistributedTask extends AbstractLibraTask {
      * @author  xiaoqianbin
      * @date    2020/7/13
      **/
-    private void addTask(String path, String node, String executeTime) {
+    protected void addTask(String path, String node, String executeTime) {
         try {
-            taskList.put(new ExecutableTask(() -> execute(Integer.parseInt(node.substring(RUNNING_TASK_PREFIX.length())), getSplitsCount(), executeTime), path, node));
+            ScheduleContext context = new ScheduleContext(new Date(), Integer.parseInt(node.substring(RUNNING_TASK_PREFIX.length())), getSplitsCount(), executeTime);
+            taskList.put(new ExecutableTask(() -> execute(context), path, node));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

@@ -42,9 +42,15 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
         return sessionFactory;
     }
 
+    /**
+     * 事务管理器
+     * @param	factory
+     * @author  xiaoqianbin
+     * @date    2020/7/30
+     **/
     @Scope("singleton")
     @Bean
-    public RabbitTransactionManager transactionManager(SessionFactory factory) {
+    public RabbitTransactionManager rabbitTransactionManager(SessionFactory factory) {
         if (null == transactionManager) {
             transactionManager = new RabbitTransactionManager();
             transactionManager.setSessionFactory(factory);

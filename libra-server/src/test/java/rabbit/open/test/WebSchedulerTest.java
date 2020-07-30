@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import rabbit.open.libra.LibraEntry;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.meta.ScheduleContext;
 import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.ui.support.task.WebSchedulerTask;
 
@@ -55,7 +56,7 @@ public class WebSchedulerTest {
         }
 
         @Override
-        public void execute(int index, int splits, String taskScheduleTime) {
+        public void execute(ScheduleContext context) {
             logger.info("run {}", getTaskName());
         }
 
