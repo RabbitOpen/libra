@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.ui;
+package rabbit.open.libra.client.ui.support.persist;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;

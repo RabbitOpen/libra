@@ -3,8 +3,8 @@ package rabbit.open.libra.client.task;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
-import rabbit.open.libra.client.ManualScheduleType;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.ScheduleType;
 import rabbit.open.libra.client.TaskMeta;
 import rabbit.open.libra.client.exception.LibraException;
 import rabbit.open.libra.client.execution.ExecutableTask;
@@ -253,7 +253,7 @@ public abstract class DistributedTask extends AbstractLibraTask {
 	 * @return
 	 */
 	protected boolean executeImmediately(String task) {
-		ManualScheduleType type = getRegistryHelper().readData(taskNodePath + PS + task);
+		ScheduleType type = getRegistryHelper().readData(taskNodePath + PS + task);
 		if (null != type) {
 			// 手动触发的任务都是立刻执行，忽略掉本身的调度时间
 			return true;

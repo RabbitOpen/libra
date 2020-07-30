@@ -13,7 +13,7 @@
     <!--<bean id="schedulerTask" class="rabbit.open.libra.client.task.SchedulerTask"></bean>-->
 
     <!--有web界面的调度器-->
-    <bean id="webSchedulerTask" class="rabbit.open.libra.client.task.WebSchedulerTask">
+    <bean id="webSchedulerTask" class="rabbit.open.libra.client.ui.support.task.WebSchedulerTask">
         <property name="dataSource" ref="rabbit"/>
         <property name="dialectType" value="${jdbc.dialect}"/>
         <property name="showSql" value="true"/>

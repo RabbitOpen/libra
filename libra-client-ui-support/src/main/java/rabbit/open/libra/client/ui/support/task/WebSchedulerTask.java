@@ -1,7 +1,8 @@
-package rabbit.open.libra.client.task;
+package rabbit.open.libra.client.ui.support.task;
 
-import rabbit.open.libra.client.ui.entity.TaskExecutionRecord;
-import rabbit.open.libra.client.ui.service.TaskExecutionRecordService;
+import rabbit.open.libra.client.task.SchedulerTask;
+import rabbit.open.libra.client.ui.support.persist.entity.TaskExecutionRecord;
+import rabbit.open.libra.client.ui.support.persist.service.TaskExecutionRecordService;
 import rabbit.open.orm.common.ddl.DDLType;
 import rabbit.open.orm.common.dialect.DialectType;
 

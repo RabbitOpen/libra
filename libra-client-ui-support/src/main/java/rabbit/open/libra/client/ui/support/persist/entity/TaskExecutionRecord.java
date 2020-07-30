@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.ui.entity;
+package rabbit.open.libra.client.ui.support.persist.entity;
 
 import rabbit.open.orm.common.dml.Policy;
 import rabbit.open.orm.core.annotation.Column;

@@ -339,7 +339,7 @@ public class RegistryHelper {
      **/
     public void publishTask(String appName, String groupName, String taskName, String scheduleTime, boolean group) {
         String desc = appName + "@" + groupName + "@" + taskName + "@" + scheduleTime + "@" +
-                (group ? ManualScheduleType.GROUP : ManualScheduleType.SINGLE);
+                (group ? ScheduleType.MANUAL_GROUP : ScheduleType.MANUAL_SINGLE);
         createPersistNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + "/" + desc);
         writeData(RegistryHelper.TASKS_EXECUTION_TRIGGER, "go");
     }

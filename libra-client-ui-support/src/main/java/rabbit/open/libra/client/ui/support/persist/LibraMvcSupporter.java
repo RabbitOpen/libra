@@ -1,11 +1,11 @@
-package rabbit.open.libra.client.ui;
+package rabbit.open.libra.client.ui.support.persist;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import rabbit.open.libra.client.task.WebSchedulerTask;
+import rabbit.open.libra.client.ui.support.task.WebSchedulerTask;
 import rabbit.open.orm.core.dml.SessionFactory;
 import rabbit.open.orm.core.spring.RabbitTransactionManager;
 

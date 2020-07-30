@@ -11,6 +11,7 @@
     <modules>
         <module>libra-server</module>
         <module>libra-client</module>
+        <module>libra-client-ui-support</module>
     </modules>
 
 
@@ -32,6 +33,11 @@
             <dependency>
                 <groupId>rabbit.open</groupId>
                 <artifactId>libra-client</artifactId>
+                <version>1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>rabbit.open</groupId>
+                <artifactId>libra-client-ui-support</artifactId>
                 <version>1.0</version>
             </dependency>
             <dependency>

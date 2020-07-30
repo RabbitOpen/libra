@@ -8,7 +8,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import rabbit.open.libra.LibraEntry;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.task.DistributedTask;
-import rabbit.open.libra.client.task.WebSchedulerTask;
+import rabbit.open.libra.client.ui.support.task.WebSchedulerTask;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

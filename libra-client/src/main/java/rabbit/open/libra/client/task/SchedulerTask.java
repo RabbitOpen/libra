@@ -8,8 +8,8 @@ import org.apache.zookeeper.Watcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.AbstractLibraTask;
-import rabbit.open.libra.client.ManualScheduleType;
 import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.ScheduleType;
 import rabbit.open.libra.client.TaskMeta;
 
 import java.text.ParseException;
@@ -346,7 +346,7 @@ public class SchedulerTask extends AbstractLibraTask {
         helper.createPersistNode(groupRunningPath + PS + schedule + PS + taskName);
         // 创建执行信息
         onCreateExecuteNode(appName, group, taskName, schedule);
-        helper.createPersistNode(taskPath + PS + schedule, ManualScheduleType.valueOf(type), true);
+        helper.createPersistNode(taskPath + PS + schedule, ScheduleType.valueOf(type), true);
         postPublish(appName, group, taskName, schedule);
         addExecutionListener(group, taskName, schedule, appName);
         helper.deleteNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + PS + task);
@@ -795,8 +795,8 @@ public class SchedulerTask extends AbstractLibraTask {
             listenerMap.remove(execPath);
             String nextTask = getNextTask(group, taskName, appName);
             String runningRoot = RegistryHelper.TASKS_EXECUTION_RUNNING + PS + appName + PS + group;
-            ManualScheduleType triggerType = helper.readData(execPath);
-			if (null != nextTask && ManualScheduleType.SINGLE != triggerType) {
+            ScheduleType triggerType = helper.readData(execPath);
+			if (null != nextTask && ScheduleType.MANUAL_SINGLE != triggerType) {
                 // 调度分组中的下一个任务
                 getRegistryHelper().createPersistNode(runningRoot + PS + scheduleTime + PS + nextTask);
                 removeLastTaskScheduleInfo(taskName, scheduleTime, runningRoot);
