@@ -1,7 +1,5 @@
 package rabbit.open.libra.dag;
 
-import rabbit.open.libra.dag.exception.CyclicDagException;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,54 +39,15 @@ public class DagNode {
      * @date    2020/8/8
      **/
     public List<DagNode> tails() {
-        return tails(new HashSet<>());
-    }
-
-    /**
-     * 获取尾部节点
-     * @param	cyclicCheckingSet
-     * @author  xiaoqianbin
-     * @date    2020/8/8
-     **/
-    private List<DagNode> tails(Set<DagNode> cyclicCheckingSet) {
-        doDagCyclicChecking(cyclicCheckingSet);
         List<DagNode> tailList = new ArrayList<>();
         if (nextNodes.isEmpty()) {
             tailList.add(this);
             return tailList;
         } else {
             for (DagNode nextNode : nextNodes) {
-                tailList.addAll(nextNode.tails(cyclicCheckingSet));
+                tailList.addAll(nextNode.tails());
             }
             return tailList;
-        }
-    }
-
-    /**
-     * 判断是否存在环
-     * @author  xiaoqianbin
-     * @date    2020/8/8
-     **/
-    public boolean circleExisted() {
-        try {
-            tails(new HashSet<>());
-            return false;
-        } catch (CyclicDagException e) {
-            return true;
-        }
-    }
-
-    /**
-     * 检测dag循环异常
-     * @param	cyclicCheckingSet
-     * @author  xiaoqianbin
-     * @date    2020/8/8
-     **/
-    protected void doDagCyclicChecking(Set<DagNode> cyclicCheckingSet) {
-        if (!cyclicCheckingSet.contains(this)) {
-            cyclicCheckingSet.add(this);
-        } else {
-            throw new CyclicDagException("dag cyclic exception");
         }
     }
 

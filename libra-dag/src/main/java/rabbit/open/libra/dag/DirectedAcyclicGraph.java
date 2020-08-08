@@ -2,6 +2,7 @@ package rabbit.open.libra.dag;
 
 import rabbit.open.libra.dag.exception.DagException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,12 +14,22 @@ public class DirectedAcyclicGraph<T extends DagNode> {
 
     private T head;
 
-    public DirectedAcyclicGraph(T head) {
+    private T tail;
+
+    public DirectedAcyclicGraph(T head, T tail) {
         this.head = head;
-        List<DagNode> tails = head.tails();
-        if (tails.size() > 1) {
-            throw new DagException("no end node exception");
+        this.tail = tail;
+        List<T> nodes = new ArrayList<>();
+        nodes.add(head);
+        for (DagNode nextNode : head.getNextNodes()) {
+            if (nodes.contains(nextNode)) {
+                throw new DagException("no end node exception");
+            }
+            if ( nextNode.nextNodes.size() == 1 && nextNode.getNextNodes().iterator().next() == tail) {
+
+            }
         }
+
     }
 
 }
