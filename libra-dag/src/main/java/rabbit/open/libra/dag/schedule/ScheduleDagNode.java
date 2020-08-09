@@ -19,7 +19,7 @@ public abstract class ScheduleDagNode extends DagNode {
         if (getPreNodes().isEmpty()) {
             doScheduledJob(context);
         } else {
-            if (allPreJobFinished(context)) {
+            if (canSchedule(context)) {
                 doScheduledJob(context);
             }
         }
@@ -31,7 +31,7 @@ public abstract class ScheduleDagNode extends DagNode {
      * @author  xiaoqianbin
      * @date    2020/8/8
      **/
-    private boolean allPreJobFinished(ScheduleContext context) {
+    private boolean canSchedule(ScheduleContext context) {
         for (DagNode preNode : getPreNodes()) {
             if (!((ScheduleDagNode)preNode).isScheduled(context)) {
                 return false;

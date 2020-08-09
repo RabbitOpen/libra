@@ -1,9 +1,7 @@
 package rabbit.open.libra.dag;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * dag节点信息
@@ -15,12 +13,12 @@ public class DagNode {
     /**
      * 下一批节点
      **/
-    protected Set<DagNode> nextNodes = new HashSet<>();
+    protected List<DagNode> nextNodes = new ArrayList<>();
 
     /**
      * 前一批节点
      **/
-    protected Set<DagNode> preNodes = new HashSet<>();
+    protected List<DagNode> preNodes = new ArrayList<>();
 
     /**
      * 添加后续节点
@@ -51,11 +49,11 @@ public class DagNode {
         }
     }
 
-    public Set<DagNode> getNextNodes() {
+    public List<DagNode> getNextNodes() {
         return nextNodes;
     }
 
-    public Set<DagNode> getPreNodes() {
+    public List<DagNode> getPreNodes() {
         return preNodes;
     }
 }
