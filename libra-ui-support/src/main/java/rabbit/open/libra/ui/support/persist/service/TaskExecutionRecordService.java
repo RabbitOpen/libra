@@ -1,8 +1,8 @@
-package rabbit.open.libra.client.ui.support.persist.service;
+package rabbit.open.libra.ui.support.persist.service;
 
 import org.springframework.stereotype.Service;
-import rabbit.open.libra.client.ui.support.persist.dao.GenericDao;
-import rabbit.open.libra.client.ui.support.persist.entity.TaskExecutionRecord;
+import rabbit.open.libra.ui.support.persist.dao.GenericDao;
+import rabbit.open.libra.ui.support.persist.entity.TaskExecutionRecord;
 
 /**
  * 任务执行记录服务

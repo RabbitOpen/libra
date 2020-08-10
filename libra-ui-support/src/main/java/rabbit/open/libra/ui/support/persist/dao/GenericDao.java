@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.ui.support.persist.dao;
+package rabbit.open.libra.ui.support.persist.dao;
 
 import rabbit.open.orm.core.dml.SessionFactory;
 import rabbit.open.orm.core.spring.SpringDaoAdapter;

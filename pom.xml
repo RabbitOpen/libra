@@ -11,8 +11,8 @@
     <modules>
         <module>libra-server</module>
         <module>libra-client</module>
-        <module>libra-client-ui-support</module>
         <module>libra-dag</module>
+        <module>libra-ui-support</module>
     </modules>
 
 
@@ -43,7 +43,7 @@
             </dependency>
             <dependency>
                 <groupId>rabbit.open</groupId>
-                <artifactId>libra-client-ui-support</artifactId>
+                <artifactId>libra-ui-support</artifactId>
                 <version>1.0</version>
             </dependency>
             <dependency>

@@ -1,10 +1,11 @@
-package rabbit.open.libra.client.ui.support.annotation;
+package rabbit.open.libra.ui.support.annotation;
 
 import org.springframework.context.annotation.Import;
 import rabbit.open.libra.client.SpringContextMonitor;
-import rabbit.open.libra.client.ui.support.persist.LibraController;
-import rabbit.open.libra.client.ui.support.persist.LibraMvcSupporter;
-import rabbit.open.libra.client.ui.support.persist.service.TaskExecutionRecordService;
+import rabbit.open.libra.ui.support.persist.LibraController;
+import rabbit.open.libra.ui.support.persist.LibraMvcSupporter;
+import rabbit.open.libra.ui.support.persist.service.TaskExecutionRecordService;
+
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,5 +21,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Import({LibraMvcSupporter.class, LibraController.class, SpringContextMonitor.class,
         TaskExecutionRecordService.class})
-public @interface LibraUserInterfaceSupport {
+public @interface EnableLibraUserInterface {
 }

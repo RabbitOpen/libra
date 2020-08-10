@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.ui.support.task;
+package rabbit.open.libra.ui.support.task;
 
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.client.ui.support.persist.entity.TaskExecutionRecord;

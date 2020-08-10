@@ -3,7 +3,7 @@ package rabbit.open.libra;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportResource;
-import rabbit.open.libra.client.ui.support.annotation.LibraUserInterfaceSupport;
+import rabbit.open.libra.ui.support.annotation.EnableLibraUserInterface;
 
 /**
  * 调度服务端入口程序
@@ -12,7 +12,7 @@ import rabbit.open.libra.client.ui.support.annotation.LibraUserInterfaceSupport;
  **/
 @SpringBootApplication
 @ImportResource(locations = {"classpath*:applicationContext.xml"})
-@LibraUserInterfaceSupport
+@EnableLibraUserInterface
 public class LibraEntry {
 
     public static void main(String[] args) {

@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>libra-client-ui-support</artifactId>
+    <artifactId>libra-ui-support</artifactId>
 
     <properties>
         <!-- Sonar -->
