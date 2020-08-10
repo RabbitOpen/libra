@@ -94,7 +94,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
     public void startSchedule() {
 		if (runningNodes.isEmpty()) {
 			addRunningNode(head);
-			head.setStatus(ExecutionStatus.RUNNING);
+			head.setScheduleStatus(ScheduleStatus.RUNNING);
 			flushContext();
 			scheduleDagNode((T) head, getContext());
 		}
@@ -108,11 +108,11 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
      **/
     public void onDagNodeExecuted(DagNode node) {
 		removeRunningNode(node);
-		node.setStatus(ExecutionStatus.FINISHED);
+		node.setScheduleStatus(ScheduleStatus.FINISHED);
     	if (node != tail) {
 			for (DagNode nextNode : node.getNextNodes()) {
 				addRunningNode((T) nextNode);
-				nextNode.setStatus(ExecutionStatus.RUNNING);
+				nextNode.setScheduleStatus(ScheduleStatus.RUNNING);
 			}
 			flushContext();
 			for (DagNode nextNode : node.getNextNodes()) {

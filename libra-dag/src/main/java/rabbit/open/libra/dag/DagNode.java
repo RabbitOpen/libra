@@ -25,9 +25,9 @@ public abstract class DagNode implements Serializable {
     protected List<DagNode> preNodes = new ArrayList<>();
 
     /**
-     * 执行状态
+     * 调度状态
      **/
-    protected ExecutionStatus status = ExecutionStatus.INIT;
+    protected ScheduleStatus scheduleStatus = ScheduleStatus.INIT;
 
     /**
      * 节点所属dag图
@@ -60,7 +60,7 @@ public abstract class DagNode implements Serializable {
      * @date    2020/8/8
      **/
     protected boolean isScheduled(ScheduleContext context) {
-        return ExecutionStatus.FINISHED == status;
+        return ScheduleStatus.FINISHED == scheduleStatus;
     }
 
     public List<DagNode> getNextNodes() {
@@ -71,8 +71,8 @@ public abstract class DagNode implements Serializable {
         return preNodes;
     }
 
-    public void setStatus(ExecutionStatus status) {
-        this.status = status;
+    public void setScheduleStatus(ScheduleStatus scheduleStatus) {
+        this.scheduleStatus = scheduleStatus;
     }
 
     public DirectedAcyclicGraph<? extends DagNode> getGraph() {
@@ -83,8 +83,8 @@ public abstract class DagNode implements Serializable {
         this.graph = graph;
     }
 
-    public ExecutionStatus getStatus() {
-        return status;
+    public ScheduleStatus getScheduleStatus() {
+        return scheduleStatus;
     }
 }
 

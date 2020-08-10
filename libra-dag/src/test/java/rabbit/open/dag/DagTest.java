@@ -6,7 +6,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import rabbit.open.libra.dag.DagNode;
 import rabbit.open.libra.dag.DirectedAcyclicGraph;
-import rabbit.open.libra.dag.ExecutionStatus;
+import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.exception.CyclicDagException;
 import rabbit.open.libra.dag.exception.NoPathException;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
@@ -86,7 +86,7 @@ public class DagTest {
 		TestCase.assertEquals(16, counter.get());
 
 		for (MyScheduleDagNode node : graph.getNodes()) {
-			TestCase.assertEquals(node.getStatus(), ExecutionStatus.FINISHED);
+			TestCase.assertEquals(node.getScheduleStatus(), ScheduleStatus.FINISHED);
 		}
 
 		TestCase.assertTrue(graph.getRunningNodes().isEmpty());
