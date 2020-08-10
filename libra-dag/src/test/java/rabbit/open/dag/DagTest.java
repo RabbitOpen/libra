@@ -1,17 +1,19 @@
 package rabbit.open.dag;
 
-import java.util.List;
-
+import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import junit.framework.TestCase;
+import rabbit.open.libra.dag.DagNode;
 import rabbit.open.libra.dag.DirectedAcyclicGraph;
+import rabbit.open.libra.dag.ExecutionStatus;
 import rabbit.open.libra.dag.exception.CyclicDagException;
 import rabbit.open.libra.dag.exception.NoPathException;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
-import rabbit.open.libra.dag.schedule.ScheduleDagNode;
+
+import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author xiaoqianbin
@@ -33,7 +35,7 @@ public class DagTest {
 		MyScheduleDagNode task1 = new MyScheduleDagNode("task1");
 		task1.addNextNode(end);
 		start.getNextNodes().forEach(n -> n.addNextNode(task1));
-		DirectedAcyclicGraph<MyScheduleDagNode> graph = new DirectedAcyclicGraph<>(start, end);
+		DirectedAcyclicGraph<MyScheduleDagNode> graph = new MyDag(start, end);
 		List<List<MyScheduleDagNode>> paths = graph.getPaths();
 		TestCase.assertEquals(3, paths.size());
 		for (int i = 0; i < paths.size(); i++) {
@@ -46,7 +48,7 @@ public class DagTest {
 	 * <b>@description 简单路径扫描测试 </b>
 	 */
 	@Test
-	public void simplePathScanTest2() {
+	public void simplePathScanTest2() throws InterruptedException {
 		MyScheduleDagNode start = new MyScheduleDagNode("start");
 		MyScheduleDagNode b1 = new MyScheduleDagNode("branch1");
 		start.addNextNode(b1);
@@ -65,12 +67,30 @@ public class DagTest {
 		b4.addNextNode(task1);
 		b5.addNextNode(task1);
 		task1.addNextNode(end);
-		DirectedAcyclicGraph<MyScheduleDagNode> graph = new DirectedAcyclicGraph<>(start, end);
+		Semaphore s = new Semaphore(0);
+		DirectedAcyclicGraph<MyScheduleDagNode> graph = new MyDag(start, end) {
+			@Override
+			protected void onDagFinished() {
+				s.release();
+			}
+		};
 		List<List<MyScheduleDagNode>> paths = graph.getPaths();
 		TestCase.assertEquals(4, paths.size());
+		TestCase.assertEquals(8, graph.getNodes().size());
 		for (int i = 0; i < paths.size(); i++) {
 			System.out.println(paths.get(i));
 		}
+		counter = new AtomicLong(0);
+		graph.startSchedule();
+		s.acquire();
+		TestCase.assertEquals(16, counter.get());
+
+		for (MyScheduleDagNode node : graph.getNodes()) {
+			TestCase.assertEquals(node.getStatus(), ExecutionStatus.FINISHED);
+		}
+
+		TestCase.assertTrue(graph.getRunningNodes().isEmpty());
+		TestCase.assertEquals(8, graph.getNodes().size());
 	}
 
 	/**
@@ -90,7 +110,7 @@ public class DagTest {
 		MyScheduleDagNode t4 = new MyScheduleDagNode("task4");
 		t1.addNextNode(t4);
 		t4.addNextNode(end);
-		DirectedAcyclicGraph<MyScheduleDagNode> graph = new DirectedAcyclicGraph<>(start, end);
+		DirectedAcyclicGraph<MyScheduleDagNode> graph = new MyDag(start, end);
 		List<List<MyScheduleDagNode>> paths = graph.getPaths();
 		TestCase.assertEquals(2, paths.size());
 		for (int i = 0; i < paths.size(); i++) {
@@ -109,7 +129,7 @@ public class DagTest {
 		MyScheduleDagNode end = new MyScheduleDagNode("end");
 		MyScheduleDagNode start = new MyScheduleDagNode("start");
 		try {
-			new DirectedAcyclicGraph<>(start, end);
+			new MyDag(start, end);
 			throw new RuntimeException();
 		} catch (NoPathException e) {
 			// TO DO: handle exception
@@ -119,7 +139,7 @@ public class DagTest {
 		MyScheduleDagNode t2 = new MyScheduleDagNode("task2");
 		t1.addNextNode(t2);
 		t2.addNextNode(end);
-		DirectedAcyclicGraph<MyScheduleDagNode> graph = new DirectedAcyclicGraph<>(start, end);
+		DirectedAcyclicGraph<MyScheduleDagNode> graph = new MyDag(start, end);
 		TestCase.assertEquals(1, graph.getPaths().size());
 		TestCase.assertEquals("[start, task1, task2, end]", graph.getPaths().get(0).toString());
 		t2.addNextNode(t1);
@@ -131,24 +151,14 @@ public class DagTest {
 		}
 	}
 
-	public class MyScheduleDagNode extends ScheduleDagNode {
+	private AtomicLong counter = new AtomicLong(0);
+
+	public class MyScheduleDagNode extends DagNode {
 
 		String nodeName;
 
-		protected boolean executed = false;
-
 		public MyScheduleDagNode(String nodeName) {
 			this.nodeName = nodeName;
-		}
-
-		@Override
-		public void doScheduledJob(ScheduleContext context) {
-			executed = true;
-		}
-
-		@Override
-		protected boolean isScheduled(ScheduleContext context) {
-			return executed;
 		}
 
 		@Override
@@ -156,5 +166,32 @@ public class DagTest {
 			return nodeName;
 		}
 
+		@Override
+		public void doSchedule(ScheduleContext context) {
+			counter.getAndAdd(2L);
+			graph.onDagNodeExecuted(this);
+		}
+	}
+
+	public class MyDag extends DirectedAcyclicGraph<MyScheduleDagNode> {
+
+		public MyDag(MyScheduleDagNode head, MyScheduleDagNode tail) {
+			super(head, tail);
+		}
+
+		@Override
+		protected void onDagFinished() {
+
+		}
+
+		@Override
+		protected ScheduleContext getContext() {
+			return null;
+		}
+
+		@Override
+		protected void flushContext() {
+
+		}
 	}
 }

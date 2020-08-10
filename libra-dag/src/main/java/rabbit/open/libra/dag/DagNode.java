@@ -1,5 +1,8 @@
 package rabbit.open.libra.dag;
 
+import rabbit.open.libra.dag.schedule.ScheduleContext;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +11,8 @@ import java.util.List;
  * @author xiaoqianbin
  * @date 2020/8/7
  **/
-public class DagNode {
+@SuppressWarnings("serial")
+public abstract class DagNode implements Serializable {
 
     /**
      * 下一批节点
@@ -19,6 +23,16 @@ public class DagNode {
      * 前一批节点
      **/
     protected List<DagNode> preNodes = new ArrayList<>();
+
+    /**
+     * 执行状态
+     **/
+    protected ExecutionStatus status = ExecutionStatus.INIT;
+
+    /**
+     * 节点所属dag图
+     **/
+    protected DirectedAcyclicGraph<? extends DagNode> graph;
 
     /**
      * 添加后续节点
@@ -32,21 +46,21 @@ public class DagNode {
     }
 
     /**
-     * 获取从当前节点开始的最末端节点集合
+     * 执行调度
+     * @param   context
      * @author  xiaoqianbin
      * @date    2020/8/8
      **/
-    public List<DagNode> tails() {
-        List<DagNode> tailList = new ArrayList<>();
-        if (nextNodes.isEmpty()) {
-            tailList.add(this);
-            return tailList;
-        } else {
-            for (DagNode nextNode : nextNodes) {
-                tailList.addAll(nextNode.tails());
-            }
-            return tailList;
-        }
+    public abstract void doSchedule(ScheduleContext context);
+
+    /**
+     * 判断节点是否已经被调度过
+     * @param	context
+     * @author  xiaoqianbin
+     * @date    2020/8/8
+     **/
+    protected boolean isScheduled(ScheduleContext context) {
+        return ExecutionStatus.FINISHED == status;
     }
 
     public List<DagNode> getNextNodes() {
@@ -55,6 +69,22 @@ public class DagNode {
 
     public List<DagNode> getPreNodes() {
         return preNodes;
+    }
+
+    public void setStatus(ExecutionStatus status) {
+        this.status = status;
+    }
+
+    public DirectedAcyclicGraph<? extends DagNode> getGraph() {
+        return graph;
+    }
+
+    public void setGraph(DirectedAcyclicGraph<? extends DagNode> graph) {
+        this.graph = graph;
+    }
+
+    public ExecutionStatus getStatus() {
+        return status;
     }
 }
 

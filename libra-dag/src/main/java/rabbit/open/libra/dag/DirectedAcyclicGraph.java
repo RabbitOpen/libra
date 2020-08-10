@@ -1,17 +1,23 @@
 package rabbit.open.libra.dag;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import rabbit.open.libra.dag.exception.CyclicDagException;
 import rabbit.open.libra.dag.exception.NoPathException;
+import rabbit.open.libra.dag.schedule.ScheduleContext;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * dag图对象
  * @author xiaoqianbin
  * @date 2020/8/7
  **/
-public class DirectedAcyclicGraph<T extends DagNode> {
+@SuppressWarnings("serial")
+public abstract class DirectedAcyclicGraph<T extends DagNode> implements Serializable {
 
 	/**
 	 * 	图的头
@@ -22,20 +28,172 @@ public class DirectedAcyclicGraph<T extends DagNode> {
 	 * 	图的尾部
 	 */
     private T tail;
-    
+
+    /**
+     * 所有节点
+     **/
+    private Set<T> nodes = new HashSet<>();
+
+	/**
+	 * 正在调度的节点
+	 **/
+    protected Set<T> runningNodes;
+
+	/**
+	 * 正在调度的节点队列锁
+	 **/
+    private ReentrantLock runningNodesQueueLock = new ReentrantLock();
+
     /**
 	 * 	图包含的路径
 	 */
     private List<List<T>> paths = new ArrayList<>();
 
     public DirectedAcyclicGraph(T head, T tail) {
-        this.head = head;
-        this.tail = tail;
-        if (head.getNextNodes().isEmpty()) {
-        	throw new NoPathException();
-        }
-        doCycleChecking();
+        this(head, tail, 64);
     }
+
+    /**
+     *
+     * @param	head
+	 * @param	tail
+	 * @param	maxNodeSize 	图中最大节点个数
+     * @author  xiaoqianbin
+     * @date    2020/8/10
+     **/
+	public DirectedAcyclicGraph(T head, T tail, int maxNodeSize) {
+		this.head = head;
+		this.tail = tail;
+		if (head.getNextNodes().isEmpty()) {
+			throw new NoPathException();
+		}
+		runningNodes = new HashSet<>(maxNodeSize);
+		doCycleChecking();
+		loadNodes(this.head);
+	}
+
+	/**
+	 * 加载图中所有节点
+	 * @param	h
+	 * @author  xiaoqianbin
+	 * @date    2020/8/10
+	 **/
+	protected void loadNodes(T h) {
+		nodes.add(h);
+		h.setGraph(this);
+		for (DagNode nextNode : h.getNextNodes()) {
+			loadNodes((T)nextNode);
+		}
+	}
+
+    /**
+     * 执行调度
+     * @author  xiaoqianbin
+     * @date    2020/8/10
+     **/
+    public void startSchedule() {
+		if (runningNodes.isEmpty()) {
+			addRunningNode(head);
+			head.setStatus(ExecutionStatus.RUNNING);
+			flushContext();
+			scheduleDagNode((T) head, getContext());
+		}
+    }
+
+    /**
+     * dag node 被执行了
+     * @param	node
+     * @author  xiaoqianbin
+     * @date    2020/8/10
+     **/
+    public void onDagNodeExecuted(DagNode node) {
+		removeRunningNode(node);
+		node.setStatus(ExecutionStatus.FINISHED);
+    	if (node != tail) {
+			for (DagNode nextNode : node.getNextNodes()) {
+				addRunningNode((T) nextNode);
+				nextNode.setStatus(ExecutionStatus.RUNNING);
+			}
+			flushContext();
+			for (DagNode nextNode : node.getNextNodes()) {
+			 	scheduleDagNode((T) nextNode, getContext());
+			}
+		} else {
+			flushContext();
+    		onDagFinished();
+		}
+	}
+
+	/**
+	 * 添加节点到运行队列
+	 * @param	node
+	 * @author  xiaoqianbin
+	 * @date    2020/8/10
+	 **/
+	private void removeRunningNode(DagNode node) {
+    	try {
+    		runningNodesQueueLock.lock();
+			runningNodes.remove(node);
+		} finally {
+    		runningNodesQueueLock.unlock();
+		}
+	}
+
+	/**
+	 * 从运行队列中移除运行节点
+	 * @param	nextNode
+	 * @author  xiaoqianbin
+	 * @date    2020/8/10
+	 **/
+	private void addRunningNode(T nextNode) {
+		try {
+			runningNodesQueueLock.lock();
+			runningNodes.add(nextNode);
+		} finally {
+			runningNodesQueueLock.unlock();
+		}
+	}
+
+	/**
+	 * 当前dag调度完成
+	 * @author  xiaoqianbin
+	 * @date    2020/8/10
+	 **/
+	protected abstract void onDagFinished();
+
+	/**
+	 * 调度节点
+	 * @param	node
+	 * @param	context
+	 * @author  xiaoqianbin
+	 * @date    2020/8/10
+	 **/
+	protected void scheduleDagNode(T node, ScheduleContext context) {
+		if (node.getPreNodes().isEmpty()) {
+			node.doSchedule(context);
+		} else {
+			for (DagNode preNode : node.getPreNodes()) {
+				if (!preNode.isScheduled(context)) {
+					return;
+				}
+			}
+			node.doSchedule(context);
+		}
+	}
+
+	/**
+     * 获取调度上下文信息
+     * @author  xiaoqianbin
+     * @date    2020/8/10
+     **/
+    protected abstract ScheduleContext getContext();
+
+    /**
+     * 持久化context
+     * @author  xiaoqianbin
+     * @date    2020/8/10
+     **/
+    protected abstract void flushContext();
 
     /**
      * <b>@description 环检测 </b>
@@ -76,4 +234,11 @@ public class DirectedAcyclicGraph<T extends DagNode> {
 		return paths;
 	}
 
+	public Set<T> getNodes() {
+		return nodes;
+	}
+
+	public Set<T> getRunningNodes() {
+		return runningNodes;
+	}
 }
