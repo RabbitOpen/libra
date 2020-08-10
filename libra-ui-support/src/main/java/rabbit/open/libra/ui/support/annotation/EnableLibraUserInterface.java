@@ -6,7 +6,6 @@ import rabbit.open.libra.ui.support.persist.LibraController;
 import rabbit.open.libra.ui.support.persist.LibraMvcSupporter;
 import rabbit.open.libra.ui.support.persist.service.TaskExecutionRecordService;
 
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
