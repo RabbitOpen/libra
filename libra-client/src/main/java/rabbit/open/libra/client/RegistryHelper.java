@@ -24,40 +24,19 @@ public class RegistryHelper {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * 运行信息路径
-     **/
-    public static final String TASKS_EXECUTION_RUNNING = "/tasks/execution/running";
-
-    /**
-     * 调度任务节点路径
-     **/
-    public static final String TASKS_EXECUTION_SCHEDULE = "/tasks/execution/schedule";
-
-    /**
-     * 用户任务节点路径
-     **/
-    public static final String TASKS_EXECUTION_USERS = "/tasks/execution/users";
-
-    /**
-     * 任务触发节点
-     **/
-    public static final String TASKS_EXECUTION_TRIGGER = "/tasks/execution/trigger";
-    
-    /**
-     * 运行通知节点
-     */
-    public static final String TASKS_EXECUTION_NOTIFY = "/tasks/execution/notify";
-
-    /**
      * 用户任务meta信息路径
      **/
-    public static final String TASKS_META_USERS = "/tasks/meta/users";
+    public static final String META_TASKS = "/meta/tasks";
 
     /**
      * 调度任务meta信息路径
      **/
-    public static final String TASKS_META_SCHEDULE = "/tasks/meta/schedule";
+    public static final String META_SCHEDULER = "/meta/scheduler";
 
+    /**
+     * dag节点
+     **/
+    public static final String GRAPHS = "/graphs";
 
     // zk地址
     @Value("${zookeeper.hosts.url:localhost:2181}")
@@ -80,40 +59,28 @@ public class RegistryHelper {
      * @date 2020/7/13
      **/
     private void createNamespace() {
-        createPersistNode(namespace, null, CreateMode.PERSISTENT, true);
-    }
-
-    /**
-     * 递归创建永久节点
-     * @param relativePath
-     * @author xiaoqianbin
-     * @date 2020/7/14
-     **/
-    public void createPersistNode(String relativePath) {
-        createPersistNode(relativePath, false);
+        createPersistNode(namespace, null, CreateMode.PERSISTENT);
     }
 
     /**
      * 递归创建永久节点
      * @param	relativePath
-	 * @param	ignoreError     忽略错误
      * @author  xiaoqianbin
      * @date    2020/7/16
      **/
-    public void createPersistNode(String relativePath, boolean ignoreError) {
-        createPersistNode(namespace + relativePath, null, CreateMode.PERSISTENT, ignoreError);
+    public void createPersistNode(String relativePath) {
+        createPersistNode(namespace + relativePath, null, CreateMode.PERSISTENT);
     }
 
     /**
      * 递归创建永久节点
      * @param	relativePath
      * @param	data            数据
-     * @param	ignoreError     忽略错误
      * @author  xiaoqianbin
      * @date    2020/7/16
      **/
-    public void createPersistNode(String relativePath, Object data, boolean ignoreError) {
-        createPersistNode(namespace + relativePath, data, CreateMode.PERSISTENT, ignoreError);
+    public void createPersistNode(String relativePath, Object data) {
+        createPersistNode(namespace + relativePath, data, CreateMode.PERSISTENT);
     }
 
     /**
@@ -121,31 +88,50 @@ public class RegistryHelper {
      * @param fullPath
      * @param data
      * @param mode
-     * @param ignoreError
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private void createPersistNode(String fullPath, Object data, CreateMode mode, boolean ignoreError) {
-        String[] nodes = fullPath.split(AbstractLibraTask.PS);
+    private String createPersistNode(String fullPath, Object data, CreateMode mode) {
+        String sep = "/";
+        String[] nodes = fullPath.split(sep);
         StringBuilder path = new StringBuilder();
+        boolean createError = false;
         for (String node : nodes) {
-            if (!"".equals(node.trim())) {
-                path.append(AbstractLibraTask.PS).append(node);
+            if ("".equals(node.trim())) {
+                continue;
             }
-            try {
-                if ("".equals(node.trim()) || client.exists(path.toString())) {
-                    continue;
-                }
-                if (fullPath.equals(path.toString())) {
-                    client.create(path.toString(), data, mode);
-                } else {
-                    client.create(path.toString(), null, mode);
-                }
-            } catch (Exception e) {
-                if (!ignoreError) {
-                    throw new LibraException(String.format("createPersistNode[%s] error, %s", fullPath, e.getMessage()));
-                }
+            path.append(sep).append(node);
+            createError = createPathNode(fullPath, data, mode, path);
+        }
+        if (createError && !client.exists(fullPath)) {
+            // 如果发生错误，节点又不存在
+            throw new LibraException(String.format("path[%s] create failed", fullPath));
+        }
+        return fullPath;
+    }
+
+    /**
+     * 创建path (fullPath上的子节点)
+     * @param	fullPath
+	 * @param	data
+	 * @param	mode
+	 * @param	path
+     * @author  xiaoqianbin
+     * @date    2020/8/11
+     **/
+    private boolean createPathNode(String fullPath, Object data, CreateMode mode, StringBuilder path) {
+        try {
+            if (client.exists(path.toString())) {
+                return false;
             }
+            if (fullPath.equals(path.toString())) {
+                client.create(path.toString(), data, mode);
+            } else {
+                client.create(path.toString(), null, mode);
+            }
+            return false;
+        } catch (Exception e) {
+            return true;
         }
     }
 
@@ -173,7 +159,7 @@ public class RegistryHelper {
      **/
     public String replaceNode(String relative, Object data, CreateMode mode) {
         removeNode(relative);
-        createPersistNode(namespace + relative, data, mode, true);
+        createPersistNode(namespace + relative, data, mode);
         return namespace + relative;
     }
 
@@ -187,17 +173,11 @@ public class RegistryHelper {
         client = new ZkClient(hosts);
         createNamespace();
         createPersistNode("/executors");
-        createPersistNode("/tasks");
-        createPersistNode("/tasks/meta");
-        createPersistNode(TASKS_META_SCHEDULE);
-        createPersistNode(TASKS_META_USERS);
-        createPersistNode("/tasks/execution");
-        createPersistNode(TASKS_EXECUTION_USERS);
-        createPersistNode(TASKS_EXECUTION_SCHEDULE);
-        createPersistNode(TASKS_EXECUTION_TRIGGER);
-        createPersistNode(TASKS_EXECUTION_NOTIFY);
-        // 处于执行中的任务
-        createPersistNode(TASKS_EXECUTION_RUNNING);
+        // dag
+        createPersistNode(GRAPHS);
+        createPersistNode("/meta");
+        createPersistNode(META_SCHEDULER);
+        createPersistNode(META_TASKS);
         registerExecutor();
     }
 
@@ -277,23 +257,23 @@ public class RegistryHelper {
      * @date 2020/7/13
      **/
     public void registerTaskMeta(String name, Object data, boolean system) {
-        String metaPath = TASKS_META_SCHEDULE;
+        String metaPath = META_SCHEDULER;
         if (!system) {
-            metaPath = TASKS_META_USERS;
+            metaPath = META_TASKS;
         }
         replaceNode(metaPath + "/" + name, data, CreateMode.PERSISTENT);
     }
 
     /**
      * 直接创建节点
-     * @param path
+     * @param relativePath
      * @param data
      * @param mode
      * @author xiaoqianbin
      * @date 2020/7/16
      **/
-    public String create(String path, Object data, CreateMode mode) {
-        return client.create(namespace + path, data, mode);
+    public String create(String relativePath, Object data, CreateMode mode) {
+        return client.create(namespace + relativePath, data, mode);
     }
 
     /**
@@ -327,22 +307,6 @@ public class RegistryHelper {
         return client.getChildren(namespace + relativePath);
     }
 
-    /**
-     * 发布任务
-     * @param	appName
-     * @param	groupName
-     * @param	taskName
-     * @param	scheduleTime
-     * @param	group           true: 发布整组任务
-     * @author  xiaoqianbin
-     * @date    2020/7/24
-     **/
-    public void publishTask(String appName, String groupName, String taskName, String scheduleTime, boolean group) {
-        String desc = appName + "@" + groupName + "@" + taskName + "@" + scheduleTime + "@" +
-                (group ? ScheduleType.MANUAL_GROUP : ScheduleType.MANUAL_SINGLE);
-        createPersistNode(RegistryHelper.TASKS_EXECUTION_TRIGGER + "/" + desc);
-        writeData(RegistryHelper.TASKS_EXECUTION_TRIGGER, "go");
-    }
 
     /**
      * 删除节点
@@ -362,8 +326,8 @@ public class RegistryHelper {
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    public void deleteNode(String relativePath) {
-        client.deleteRecursive(namespace + relativePath);
+    public boolean deleteRecursive(String relativePath) {
+        return client.deleteRecursive(namespace + relativePath);
     }
 
     /**

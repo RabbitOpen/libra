@@ -2,7 +2,6 @@ package rabbit.open.libra.client;
 
 import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.support.CronTrigger;
-import rabbit.open.libra.client.task.SchedulerTask;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -16,14 +15,7 @@ import java.util.Date;
 public class TaskMeta implements Serializable {
 
     // 任务片
-    private transient TaskPiece taskPiece;
-
-    /**
-     * 任务执行顺序
-     * @author  xiaoqianbin
-     * @date    2020/7/13
-     **/
-    private Integer executeOrder;
+    private transient Task task;
 
     /**
      * 切片个数
@@ -45,33 +37,13 @@ public class TaskMeta implements Serializable {
     // 任务名
     private String taskName;
 
-    // 任务执行的时间表达式
-    private String cronExpression;
 
-    // 任务最大并行数
-    private int groupTaskConcurrence;
 
-    public TaskMeta(TaskPiece taskPiece) {
-        setTaskPiece(taskPiece);
-        setExecuteOrder(taskPiece.getExecuteOrder());
-        setSplitsCount(taskPiece.getSplitsCount());
-        setParallel(taskPiece.getParallel());
-        setGroupName(taskPiece.getTaskGroup());
-        setTaskName(taskPiece.getTaskName());
-        setCronExpression(taskPiece.getCronExpression());
-        if (taskPiece instanceof SchedulerTask) {
-            setGroupTaskConcurrence(((SchedulerTask) taskPiece).getGroupTaskConcurrence());
-        }
-    }
-
-    /**
-     * 获取任务下次调度时间
-     * @param   lastCompletionTime
-     * @author  xiaoqianbin
-     * @date    2020/7/15
-     **/
-    public Date getNextScheduleTime(Date lastCompletionTime) {
-        return getNextScheduleTime(lastCompletionTime, getCronExpression());
+    public TaskMeta(Task task) {
+        setTask(task);
+        setSplitsCount(task.getSplitsCount());
+        setParallel(task.getConcurrenceCount());
+        setTaskName(task.getTaskName());
     }
     
     /**
@@ -98,20 +70,13 @@ public class TaskMeta implements Serializable {
         });
     }
 
-    public TaskPiece getTaskPiece() {
-        return taskPiece;
+
+    public Task getTask() {
+        return task;
     }
 
-    public void setTaskPiece(TaskPiece taskPiece) {
-        this.taskPiece = taskPiece;
-    }
-
-    public Integer getExecuteOrder() {
-        return executeOrder;
-    }
-
-    public void setExecuteOrder(Integer executeOrder) {
-        this.executeOrder = executeOrder;
+    public void setTask(Task task) {
+        this.task = task;
     }
 
     public int getSplitsCount() {
@@ -144,26 +109,5 @@ public class TaskMeta implements Serializable {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
-    }
-
-    public String getCronExpression() {
-        return cronExpression;
-    }
-
-    public void setCronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
-    }
-
-    @Override
-    public String toString() {
-        return getTaskName();
-    }
-
-    public int getGroupTaskConcurrence() {
-        return groupTaskConcurrence;
-    }
-
-    public void setGroupTaskConcurrence(int groupTaskConcurrence) {
-        this.groupTaskConcurrence = groupTaskConcurrence;
     }
 }
