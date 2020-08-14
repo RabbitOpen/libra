@@ -21,6 +21,11 @@ public class ScheduleContext implements Serializable {
     private String scheduleId;
 
     /**
+     * 任务id
+     **/
+    private String taskId;
+
+    /**
      * 触发日期（实际日期）
      **/
     private Date fireDate;
@@ -29,6 +34,21 @@ public class ScheduleContext implements Serializable {
      * 调度日期
      **/
     private Date scheduleDate;
+
+    /**
+     * 并发度
+     **/
+    private int parallel = 0;
+
+    /**
+     * 分片索引
+     **/
+    private int index = 0;
+
+    /**
+     * 切片数
+     **/
+    private int splitsCount = 0;
 
     public void setContext(String key, Serializable value) {
         this.context.put(key, value);
@@ -60,5 +80,45 @@ public class ScheduleContext implements Serializable {
 
     public String getScheduleId() {
         return scheduleId;
+    }
+
+    public void setContext(Map<String, Serializable> context) {
+        this.context = context;
+    }
+
+    public void setScheduleId(String scheduleId) {
+        this.scheduleId = scheduleId;
+    }
+
+    public int getParallel() {
+        return parallel;
+    }
+
+    public void setParallel(int parallel) {
+        this.parallel = parallel;
+    }
+
+    public String getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public int getSplitsCount() {
+        return splitsCount;
+    }
+
+    public void setSplitsCount(int splitsCount) {
+        this.splitsCount = splitsCount;
     }
 }

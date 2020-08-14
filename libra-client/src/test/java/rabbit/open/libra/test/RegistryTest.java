@@ -1,10 +1,14 @@
 package rabbit.open.libra.test;
 
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import rabbit.open.libra.client.RegistryHelper;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 单元测试
@@ -15,12 +19,38 @@ import rabbit.open.libra.client.RegistryHelper;
 public class RegistryTest {
 
     @Test
-    public void createNodeTest() {
-        init("/megrez/loan");
+    public void createNodeTest() throws InterruptedException {
+        init("/libra/loan");
         RegistryHelper helper = new RegistryHelper();
-        helper.setNamespace("/megrez/loan");
+        helper.setNamespace("/libra/loan");
         helper.setHosts("localhost:2181");
         helper.init();
+        Semaphore s = new Semaphore(0);
+        helper.createPersistNode("/xx");
+        helper.subscribeDataChanges("/xx", new IZkDataListener() {
+
+            @Override
+            public void handleDataChange(String s, Object o) throws Exception {
+                System.out.println(o.toString());
+                Thread.sleep(2000);
+            }
+
+            @Override
+            public void handleDataDeleted(String s) throws Exception {
+
+            }
+
+        });
+        s.tryAcquire(1, TimeUnit.SECONDS);
+        helper.writeData("/xx", "hello");
+        s.tryAcquire(1, TimeUnit.SECONDS);
+        helper.writeData("/xx", "go1");
+        helper.writeData("/xx", "go2");
+        helper.writeData("/xx", "go3");
+        helper.writeData("/xx", "go4");
+        helper.writeData("/xx", "go5");
+        helper.writeData("/xx", "go6");
+        s.tryAcquire(1, TimeUnit.SECONDS);
         helper.destroy();
     }
 

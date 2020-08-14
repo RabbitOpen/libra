@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-           http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+           http://www.springframework.org/schema/beans/spring-beans-4.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
+    <context:component-scan base-package="rabbit.open.libra.test"/>
 
     <bean id="registryHelper" class="rabbit.open.libra.client.RegistryHelper">
         <property name="namespace" value="/megrez/loan"/>
@@ -11,14 +13,6 @@
     </bean>
 
     <!--<bean id="schedulerTask" class="rabbit.open.libra.client.task.SchedulerTask"></bean>-->
-
-    <!--有web界面的调度器-->
-    <bean id="webSchedulerTask" class="rabbit.open.libra.client.ui.support.task.WebSchedulerTask">
-        <property name="dataSource" ref="rabbit"/>
-        <property name="dialectType" value="${jdbc.dialect}"/>
-        <property name="showSql" value="true"/>
-        <property name="ddlType" value="CREATE"/>
-    </bean>
 
 
     <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">

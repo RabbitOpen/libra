@@ -9,7 +9,6 @@
     <packaging>pom</packaging>
     <version>1.0</version>
     <modules>
-        <module>libra-server</module>
         <module>libra-client</module>
         <module>libra-dag</module>
         <module>libra-ui-support</module>

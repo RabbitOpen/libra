@@ -353,6 +353,10 @@ public class RegistryHelper {
         this.namespace = namespace;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
     public void setHosts(String hosts) {
         this.hosts = hosts;
     }

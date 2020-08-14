@@ -1,7 +1,8 @@
-package rabbit.open.libra.client;
+package rabbit.open.libra.client.meta;
 
 import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.support.CronTrigger;
+import rabbit.open.libra.client.Task;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -37,8 +38,6 @@ public class TaskMeta implements Serializable {
     // 任务名
     private String taskName;
 
-
-
     public TaskMeta(Task task) {
         setTask(task);
         setSplitsCount(task.getSplitsCount());
@@ -55,21 +54,23 @@ public class TaskMeta implements Serializable {
     public static Date getNextScheduleTime(Date lastCompletionTime, String cronExpression) {
     	CronTrigger trigger = new CronTrigger(cronExpression);
         return trigger.nextExecutionTime(new TriggerContext() {
+
             @Override
             public Date lastScheduledExecutionTime() {
                 return null;
             }
+
             @Override
             public Date lastActualExecutionTime() {
                 return null;
             }
+
             @Override
             public Date lastCompletionTime() {
                 return lastCompletionTime;
             }
         });
     }
-
 
     public Task getTask() {
         return task;
