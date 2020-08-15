@@ -12,6 +12,7 @@ import rabbit.open.libra.client.exception.LibraException;
 
 import javax.annotation.PostConstruct;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -261,7 +262,12 @@ public class RegistryHelper {
         if (!system) {
             metaPath = META_TASKS;
         }
-        replaceNode(metaPath + "/" + name, data, CreateMode.PERSISTENT);
+        String path = namespace + metaPath + "/" + name;
+        if (client.exists(path)) {
+            client.writeData(path, data);
+        } else {
+            createPersistNode(path, data, CreateMode.PERSISTENT);
+        }
     }
 
     /**
@@ -304,7 +310,12 @@ public class RegistryHelper {
      * @date 2020/7/16
      **/
     public List<String> getChildren(String relativePath) {
-        return client.getChildren(namespace + relativePath);
+        try {
+            return client.getChildren(namespace + relativePath);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
 
 

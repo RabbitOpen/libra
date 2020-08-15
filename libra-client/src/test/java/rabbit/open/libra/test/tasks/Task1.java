@@ -9,7 +9,7 @@ import rabbit.open.libra.dag.schedule.ScheduleContext;
  * @date 2020/8/14
  **/
 @Component
-public class SimpleTask1 extends DistributedTask {
+public class Task1 extends DistributedTask {
 
     @Override
     public void execute(ScheduleContext context) {

@@ -3,7 +3,7 @@ package rabbit.open.libra.client.task;
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.Task;
-import rabbit.open.libra.client.TaskMonitor;
+import rabbit.open.libra.client.TaskSubscriber;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import javax.annotation.PostConstruct;
@@ -21,7 +21,7 @@ public abstract class DistributedTask extends Task {
      * @date    2020/8/14
      **/
     @Autowired
-    protected TaskMonitor monitor;
+    protected TaskSubscriber monitor;
 
     /**
      * zk交互对象

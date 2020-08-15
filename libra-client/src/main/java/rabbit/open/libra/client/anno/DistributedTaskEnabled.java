@@ -2,7 +2,7 @@ package rabbit.open.libra.client.anno;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import rabbit.open.libra.client.TaskMonitor;
+import rabbit.open.libra.client.TaskSubscriber;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Configuration
-@Import({TaskMonitor.class})
+@Import({TaskSubscriber.class})
 public @interface DistributedTaskEnabled {
 
 }
