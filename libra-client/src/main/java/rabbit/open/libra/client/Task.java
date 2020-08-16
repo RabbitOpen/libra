@@ -7,29 +7,29 @@ import rabbit.open.libra.dag.schedule.ScheduleContext;
  * @author xiaoqianbin
  * @date 2020/8/11
  **/
-public abstract class Task {
+public interface Task {
 
     /**
      * 默认切片数
      **/
-    public static final int DEFAULT_SPLITS_COUNT = 1;
+    int DEFAULT_SPLITS_COUNT = 1;
 
     /**
      * 默认任务并发数
      **/
-    public static final int DEFAULT_CONCURRENCE_COUNT = 3;
+    int DEFAULT_CONCURRENCE_COUNT = 3;
 
     /**
      * 分隔符
      **/
-    public static final String SP = "/";
+    String SP = "/";
 
     /**
      * 任务名
      * @author  xiaoqianbin
      * @date    2020/8/11
      **/
-    public String getTaskName() {
+    default String getTaskName() {
         return getClass().getSimpleName();
     }
 
@@ -39,14 +39,14 @@ public abstract class Task {
      * @author  xiaoqianbin
      * @date    2020/8/11
      **/
-    public abstract void execute(ScheduleContext context);
+    void execute(ScheduleContext context);
 
     /**
      * 应用名
      * @author  xiaoqianbin
      * @date    2020/8/11
      **/
-    public String getAppName() {
+    default String getAppName() {
         return "libra";
     }
 
@@ -55,7 +55,7 @@ public abstract class Task {
      * @author  xiaoqianbin
      * @date    2020/8/11
      **/
-    public int getSplitsCount() {
+    default int getSplitsCount() {
         return DEFAULT_SPLITS_COUNT;
     }
 
@@ -64,7 +64,7 @@ public abstract class Task {
      * @author  xiaoqianbin
      * @date    2020/8/11
      **/
-    public int getConcurrenceCount() {
+    default int getConcurrenceCount() {
         return DEFAULT_CONCURRENCE_COUNT;
     }
 }

@@ -21,12 +21,10 @@ public class RegistryTest {
     @Test
     public void createNodeTest() throws InterruptedException {
         init("/libra/loan");
-        RegistryHelper helper = new RegistryHelper();
-        helper.setNamespace("/libra/loan");
-        helper.setHosts("localhost:2181");
+        RegistryHelper helper = new RegistryHelper("localhost:2181", "/libra/loan");
         helper.init();
         Semaphore s = new Semaphore(0);
-        helper.createPersistNode("/xx");
+        helper.createNode("/xx");
         helper.subscribeDataChanges("/xx", new IZkDataListener() {
 
             @Override

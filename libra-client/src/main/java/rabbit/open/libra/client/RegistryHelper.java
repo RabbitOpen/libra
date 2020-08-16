@@ -7,10 +7,8 @@ import org.I0Itec.zkclient.ZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import rabbit.open.libra.client.exception.LibraException;
 
-import javax.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +38,9 @@ public class RegistryHelper {
     public static final String GRAPHS = "/graphs";
 
     // zk地址
-    @Value("${zookeeper.hosts.url:localhost:2181}")
     private String hosts;
 
     // 监控根节点
-    @Value("${libra.monitor.namespace:/libra/root}")
     private String namespace;
 
     private ZkClient client;
@@ -54,13 +50,18 @@ public class RegistryHelper {
     // 任务节点名字
     private String executorName;
 
+    public RegistryHelper(String hosts, String namespace) {
+        this.hosts = hosts;
+        this.namespace = namespace;
+    }
+
     /**
      * 递归创建根节点
      * @author xiaoqianbin
      * @date 2020/7/13
      **/
     private void createNamespace() {
-        createPersistNode(namespace, null, CreateMode.PERSISTENT);
+        createNode(namespace, null, CreateMode.PERSISTENT);
     }
 
     /**
@@ -69,8 +70,8 @@ public class RegistryHelper {
      * @author  xiaoqianbin
      * @date    2020/7/16
      **/
-    public void createPersistNode(String relativePath) {
-        createPersistNode(namespace + relativePath, null, CreateMode.PERSISTENT);
+    public void createNode(String relativePath) {
+        createNode(namespace + relativePath, null, CreateMode.PERSISTENT);
     }
 
     /**
@@ -81,7 +82,7 @@ public class RegistryHelper {
      * @date    2020/7/16
      **/
     public void createPersistNode(String relativePath, Object data) {
-        createPersistNode(namespace + relativePath, data, CreateMode.PERSISTENT);
+        createNode(namespace + relativePath, data, CreateMode.PERSISTENT);
     }
 
     /**
@@ -92,8 +93,8 @@ public class RegistryHelper {
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    private String createPersistNode(String fullPath, Object data, CreateMode mode) {
-        String sep = "/";
+    private String createNode(String fullPath, Object data, CreateMode mode) {
+        String sep = Task.SP;
         String[] nodes = fullPath.split(sep);
         StringBuilder path = new StringBuilder();
         boolean createError = false;
@@ -160,7 +161,7 @@ public class RegistryHelper {
      **/
     public String replaceNode(String relative, Object data, CreateMode mode) {
         removeNode(relative);
-        createPersistNode(namespace + relative, data, mode);
+        createNode(namespace + relative, data, mode);
         return namespace + relative;
     }
 
@@ -169,16 +170,15 @@ public class RegistryHelper {
      * @author xiaoqianbin
      * @date 2020/7/14
      **/
-    @PostConstruct
     public void init() {
         client = new ZkClient(hosts);
         createNamespace();
-        createPersistNode("/executors");
+        createNode("/executors");
         // dag
-        createPersistNode(GRAPHS);
-        createPersistNode("/meta");
-        createPersistNode(META_SCHEDULER);
-        createPersistNode(META_TASKS);
+        createNode(GRAPHS);
+        createNode("/meta");
+        createNode(META_SCHEDULER);
+        createNode(META_TASKS);
         registerExecutor();
     }
 
@@ -266,7 +266,7 @@ public class RegistryHelper {
         if (client.exists(path)) {
             client.writeData(path, data);
         } else {
-            createPersistNode(path, data, CreateMode.PERSISTENT);
+            createNode(path, data, CreateMode.PERSISTENT);
         }
     }
 

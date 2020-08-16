@@ -3,13 +3,12 @@ package rabbit.open.libra.client.monitor;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import rabbit.open.libra.client.RegistryConfig;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.Task;
-import rabbit.open.libra.client.ZkListener;
+import rabbit.open.libra.client.ZookeeperMonitor;
 import rabbit.open.libra.client.meta.TaskExecutionMeta;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.client.task.DistributedTask;
@@ -31,9 +30,7 @@ import java.util.stream.Collectors;
  * @author xiaoqianbin
  * @date 2020/8/14
  **/
-public class TaskSubscriber extends ZkListener {
-
-    private Logger logger = LoggerFactory.getLogger(getClass());
+public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 运行任务线程数
@@ -88,7 +85,7 @@ public class TaskSubscriber extends ZkListener {
     private ArrayBlockingQueue<String> scanPathQueue;
 
     @Autowired
-    RegistryHelper helper;
+    RegistryConfig config;
 
     private Semaphore loaderBlockSemaphore = new Semaphore(0);
 
@@ -416,12 +413,13 @@ public class TaskSubscriber extends ZkListener {
         loaderBlockSemaphore.release(10);
         taskLoader.shutdown();
         taskRunner.shutdown();
+        getRegistryHelper().destroy();
         logger.info("task monitor is closed");
     }
 
     @Override
-    protected RegistryHelper getHelper() {
-        return helper;
+    public RegistryConfig getConfig() {
+        return config;
     }
 
     @Override

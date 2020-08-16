@@ -2,20 +2,47 @@ package rabbit.open.libra.client;
 
 import org.I0Itec.zkclient.IZkStateListener;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * zk事件监听
  * @author xiaoqianbin
  * @date 2020/8/16
  **/
-public abstract class ZkListener {
+public abstract class ZookeeperMonitor {
+
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * 获取zk辅助类
+     * zk交互对象
+     **/
+    protected RegistryHelper helper;
+
+    /**
+     * 获取zk辅助类配置
      * @author xiaoqianbin
      * @date 2020/8/16
      **/
-    protected abstract RegistryHelper getHelper();
+    protected abstract RegistryConfig getConfig();
+
+    /**
+     * 获取zk交互对象实例
+     * @author  xiaoqianbin
+     * @date    2020/8/16
+     **/
+    protected RegistryHelper getRegistryHelper() {
+        RegistryConfig config = getConfig();
+        if (null == helper) {
+            synchronized (config) {
+                if (null == helper) {
+                    helper = new RegistryHelper(config.getHosts(), config.getNamespace());
+                    helper.init();
+                }
+            }
+        }
+        return helper;
+    }
 
     /**
      * zk失联
@@ -37,7 +64,7 @@ public abstract class ZkListener {
      * @date    2020/8/16
      **/
     protected void init() {
-        getHelper().subscribeStateChanges(new IZkStateListener() {
+        getRegistryHelper().subscribeStateChanges(new IZkStateListener() {
 
             @Override
             public void handleStateChanged(Watcher.Event.KeeperState keeperState) {

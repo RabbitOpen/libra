@@ -17,8 +17,7 @@ public class DistributedTaskTest {
 
     @Test
     public void t1() throws IOException {
-
-        System.in.read();
+        System.out.println("");
     }
 
 }

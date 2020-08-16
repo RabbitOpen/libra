@@ -7,7 +7,7 @@
 
     <context:component-scan base-package="rabbit.open.libra.test"/>
 
-    <bean id="registryHelper" class="rabbit.open.libra.client.RegistryHelper">
+    <bean id="registryConfig" class="rabbit.open.libra.client.RegistryConfig">
         <property name="namespace" value="/megrez/loan"/>
         <property name="hosts" value="localhost:2181"/>
     </bean>
