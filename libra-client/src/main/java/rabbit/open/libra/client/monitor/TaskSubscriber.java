@@ -1,4 +1,4 @@
-package rabbit.open.libra.client;
+package rabbit.open.libra.client.monitor;
 
 import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.zookeeper.CreateMode;
@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.Task;
+import rabbit.open.libra.client.ZkListener;
 import rabbit.open.libra.client.meta.TaskExecutionMeta;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.client.task.DistributedTask;
@@ -19,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +31,7 @@ import java.util.stream.Collectors;
  * @author xiaoqianbin
  * @date 2020/8/14
  **/
-public class TaskSubscriber {
+public class TaskSubscriber extends ZkListener {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -90,6 +95,11 @@ public class TaskSubscriber {
     private ReentrantLock pathLock = new ReentrantLock();
 
     /**
+     * zk服务端是否就绪
+     **/
+    protected boolean zkPrepared = true;
+
+    /**
      * 任务加载线程
      **/
     private ThreadPoolExecutor taskLoader;
@@ -103,6 +113,7 @@ public class TaskSubscriber {
 
     @PostConstruct
     public void init() {
+        super.init();
         scanPathQueue = new ArrayBlockingQueue<>(maxMonitorTaskSize);
         taskRunner = new ThreadPoolExecutor(coreRunnerSize, maxRunnerSize, 30, TimeUnit.MINUTES, new ArrayBlockingQueue<>(taskQueueSize), new RejectedExecutionHandler() {
             @Override
@@ -119,7 +130,9 @@ public class TaskSubscriber {
                         if (loaderBlockSemaphore.tryAcquire(3, TimeUnit.SECONDS) && stopTaskLoading) {
                             break;
                         }
-                        loadTask();
+                        if (zkPrepared) {
+                            loadTask();
+                        }
                     } catch (Exception e) {
                         if (!(e instanceof KeeperException.NoNodeException)) {
                             logger.error(e.getMessage(), e);
@@ -404,5 +417,49 @@ public class TaskSubscriber {
         taskLoader.shutdown();
         taskRunner.shutdown();
         logger.info("task monitor is closed");
+    }
+
+    @Override
+    protected RegistryHelper getHelper() {
+        return helper;
+    }
+
+    @Override
+    protected void onZookeeperDisconnected() {
+        zkPrepared = false;
+    }
+
+    @Override
+    protected void onZookeeperConnected() {
+        if (zkPrepared) {
+            return;
+        }
+        zkPrepared = true;
+        // 补偿由于网络问题导致的路径创建失败
+        doCompensation(() -> path2add.poll(), path -> createNode(path));
+        doCompensation(() -> path2remove.poll(), path -> removeRunningNode(path));
+    }
+
+    /**
+     * zk恢复时补偿操作
+     * @param	loadPathFunc     路径加载函数
+     * @param	funcCompensation 补偿函数
+     * @author  xiaoqianbin
+     * @date    2020/8/16
+     **/
+    private void doCompensation(Supplier<String> loadPathFunc, Consumer<String> funcCompensation) {
+        logger.info("begin to doCompensation");
+        while (true) {
+            if (!zkPrepared) {
+                return;
+            }
+            String poll = loadPathFunc.get();
+            if (null != poll) {
+                funcCompensation.accept(poll);
+            } else {
+                break;
+            }
+        }
+        logger.info("compensation is finished");
     }
 }
