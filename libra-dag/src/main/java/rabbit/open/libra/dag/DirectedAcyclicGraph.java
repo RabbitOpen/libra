@@ -37,7 +37,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 	/**
 	 * 正在调度的节点
 	 **/
-    protected Set<T> runningNodes;
+    private Set<T> runningNodes;
 
 	/**
 	 * 正在调度的节点队列锁
@@ -207,27 +207,27 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 
 	@SuppressWarnings("unchecked")
 	protected void doCycleChecking(T from, List<T> path) {
-		int resetIndex = path.size();
-        for (DagNode nextNode : from.getNextNodes()) {
-        	T node = (T)nextNode;
-            if (node == tail) {
-            	// 搜索完一条路径
-            	List<T> p = new ArrayList<>();
-            	p.addAll(path);
-            	p.add(node);
-            	paths.add(p);
-            	continue;
-            }
-            if (!path.contains(node)) {
-            	path.add(node);
-            	// 搜索子路径
-            	doCycleChecking(node, path);
-            	// 搜索下一个分支
-            	path = path.subList(0, resetIndex);
-            } else {
-            	throw new CyclicDagException("cycle is existed in this graph");
-            }
-        }
+		List<T> pathList = new ArrayList<>(path);
+		for (DagNode nextNode : from.getNextNodes()) {
+			T node = (T) nextNode;
+			if (node == tail) {
+				// 搜索完一条路径
+				List<T> p = new ArrayList<>();
+				p.addAll(pathList);
+				p.add(node);
+				paths.add(p);
+				continue;
+			}
+			if (!pathList.contains(node)) {
+				pathList.add(node);
+				// 搜索子路径
+				doCycleChecking(node, pathList);
+				// 搜索下一个分支
+				pathList = new ArrayList<>(path);
+			} else {
+				throw new CyclicDagException("cycle is existed in this graph");
+			}
+		}
 	}
 	
 	public List<List<T>> getPaths() {

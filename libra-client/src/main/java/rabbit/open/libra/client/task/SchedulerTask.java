@@ -2,10 +2,7 @@ package rabbit.open.libra.client.task;
 
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import rabbit.open.libra.client.RegistryConfig;
-import rabbit.open.libra.client.RegistryHelper;
-import rabbit.open.libra.client.Task;
-import rabbit.open.libra.client.ZookeeperMonitor;
+import rabbit.open.libra.client.*;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
@@ -56,7 +53,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
 
     @Override
     public void execute(ScheduleContext context) {
-        String schedulePath = RegistryHelper.META_SCHEDULER + SP + getTaskName();
+        String schedulePath = RegistryHelper.META_SCHEDULER + Constant.SP + getTaskName();
         getRegistryHelper().subscribeChildChanges(schedulePath, (path, list) -> {
             if (!list.contains(getTaskName())) {
                 logger.info("leader is lost");
@@ -117,12 +114,12 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
 
     @Override
     protected void onZookeeperDisconnected() {
-
+        leader = false;
     }
 
     @Override
     protected void onZookeeperConnected() {
-
+        leader = true;
     }
 
     /**

@@ -17,12 +17,12 @@ public abstract class DagNode implements Serializable {
     /**
      * 下一批节点
      **/
-    protected List<DagNode> nextNodes = new ArrayList<>();
+    private List<DagNode> nextNodes = new ArrayList<>();
 
     /**
      * 前一批节点
      **/
-    protected List<DagNode> preNodes = new ArrayList<>();
+    private List<DagNode> preNodes = new ArrayList<>();
 
     /**
      * 调度状态
@@ -75,7 +75,8 @@ public abstract class DagNode implements Serializable {
         this.scheduleStatus = scheduleStatus;
     }
 
-    public DirectedAcyclicGraph<? extends DagNode> getGraph() {
+    @SuppressWarnings("rawtypes")
+    public DirectedAcyclicGraph getGraph() {
         return graph;
     }
 

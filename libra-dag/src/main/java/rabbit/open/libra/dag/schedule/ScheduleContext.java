@@ -13,7 +13,7 @@ import java.util.Map;
 @SuppressWarnings("serial")
 public class ScheduleContext implements Serializable {
 
-    Map<String, Serializable> context = new HashMap<>();
+    private Map<String, Serializable> context = new HashMap<>();
 
     /**
      * 调度批次号

@@ -5,9 +5,9 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import rabbit.open.libra.client.Constant;
 import rabbit.open.libra.client.RegistryConfig;
 import rabbit.open.libra.client.RegistryHelper;
-import rabbit.open.libra.client.Task;
 import rabbit.open.libra.client.ZookeeperMonitor;
 import rabbit.open.libra.client.meta.TaskExecutionMeta;
 import rabbit.open.libra.client.meta.TaskMeta;
@@ -59,13 +59,11 @@ public class TaskSubscriber extends ZookeeperMonitor {
     /**
      * 任务列表
      **/
-    private List<DistributedTask> tasks = new ArrayList<>();
+    private List<DistributedTask> distributedTasks = new ArrayList<>();
 
-    // TODO: zk恢复时尝试处理
     // 由于zk异常导致删除失败的节点
     private LinkedBlockingQueue<String> path2remove = new LinkedBlockingQueue<>();
 
-    // TODO: zk恢复时尝试处理 添加时需要先判断是否已经存在
     // 由于zk异常导致添加失败的节点
     private LinkedBlockingQueue<String> path2add = new LinkedBlockingQueue<>();
 
@@ -109,35 +107,39 @@ public class TaskSubscriber extends ZookeeperMonitor {
     private ThreadPoolExecutor taskRunner;
 
     @PostConstruct
+    @Override
     public void init() {
         super.init();
         scanPathQueue = new ArrayBlockingQueue<>(maxMonitorTaskSize);
-        taskRunner = new ThreadPoolExecutor(coreRunnerSize, maxRunnerSize, 30, TimeUnit.MINUTES, new ArrayBlockingQueue<>(taskQueueSize), new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                r.run();
-            }
-        });
+        taskRunner = new ThreadPoolExecutor(coreRunnerSize, maxRunnerSize, 30, TimeUnit.MINUTES, new ArrayBlockingQueue<>(taskQueueSize),
+                (r, executor) -> r.run());
         int corePoolSize = 3;
         taskLoader = new ThreadPoolExecutor(corePoolSize, corePoolSize, 30, TimeUnit.MINUTES, new ArrayBlockingQueue<>(taskQueueSize));
         for (int i = 0; i < corePoolSize; i++) {
-            taskLoader.submit(() -> {
-                while (!stopTaskLoading) {
-                    try {
-                        if (loaderBlockSemaphore.tryAcquire(3, TimeUnit.SECONDS) && stopTaskLoading) {
-                            break;
-                        }
-                        if (zkPrepared) {
-                            loadTask();
-                        }
-                    } catch (Exception e) {
-                        if (!(e instanceof KeeperException.NoNodeException)) {
-                            logger.error(e.getMessage(), e);
-                        }
+            submitTaskLoadingJob();
+        }
+    }
+
+    /**
+     * 创建加载任务分片的任务
+     * @author  xiaoqianbin
+     * @date    2020/8/17
+     **/
+    private void submitTaskLoadingJob() {
+        taskLoader.submit(() -> {
+            while (!stopTaskLoading) {
+                try {
+                    if (loaderBlockSemaphore.tryAcquire(3, TimeUnit.SECONDS) && stopTaskLoading) {
+                        break;
+                    }
+                    loadTask();
+                } catch (Exception e) {
+                    if (!e.getClass().equals(KeeperException.NoNodeException.class)) {
+                        logger.error(e.getMessage(), e);
                     }
                 }
-            });
-        }
+            }
+        });
     }
 
     /**
@@ -146,10 +148,13 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @date    2020/8/14
      **/
     protected void loadTask() {
+        if (!zkPrepared) {
+            return;
+        }
         while (true) {
             String taskMetaNodePath = getPath2Scan();
             if (null == taskMetaNodePath) {
-                break;
+                return;
             }
             List<String> tasks = helper.getChildren(taskMetaNodePath);
             if (tasks.isEmpty()) {
@@ -169,7 +174,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @date    2020/8/15
      **/
     private void loadTaskById(String taskMetaNodePath, String taskId) {
-        String taskIdPath = taskMetaNodePath + "/" + taskId;
+        String taskIdPath = taskMetaNodePath + Constant.SP + taskId;
         TaskExecutionMeta meta = getTaskMeta(taskMetaNodePath, taskId);
         if (!meta.hasQuota()) {
             return;
@@ -184,7 +189,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
                     meta.resume();
                 }
             } else {
-                break;
+                return;
             }
         }
     }
@@ -250,7 +255,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
     private void fetchNextTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionMeta meta) {
         try {
             List<String> pieces = helper.getChildren(taskIdPath);
-            List<String> finishedPieces = pieces.stream().filter(s -> !s.startsWith("R-") && !s.startsWith("R-")).collect(Collectors.toList());
+            List<String> finishedPieces = pieces.stream().filter(s -> !(s.startsWith("R-") || s.startsWith("E-"))).collect(Collectors.toList());
             if (meta.getSplitsCount() == finishedPieces.size()) {
                 // 任务结束
                 taskExecutionMetaMap.remove(taskIdPath.substring(taskMetaNodePath.length() + 1));
@@ -262,7 +267,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
                     continue;
                 }
                 if (try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
-                    break;
+                    return;
                 }
             }
         } catch (Exception e) {
@@ -349,11 +354,11 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @date    2020/8/14
      **/
     public void register(DistributedTask task) {
-        tasks.add(task);
-        String name = task.getAppName() + Task.SP + task.getTaskName();
+        distributedTasks.add(task);
+        String name = task.getAppName() + Constant.SP + task.getTaskName();
         helper.registerTaskMeta(name, new TaskMeta(task), false);
         // 任务节点相对路径
-        String relativeTaskMetaNodePath = RegistryHelper.META_TASKS + Task.SP + name;
+        String relativeTaskMetaNodePath = RegistryHelper.META_TASKS + Constant.SP + name;
         // 任务节点绝对路径
         String taskNodePath = helper.getNamespace() + relativeTaskMetaNodePath;
         taskMap.put(taskNodePath, task);
@@ -366,7 +371,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
             @Override
             public void handleDataDeleted(String path) {
-
+                // to do: ignore
             }
         });
         addScanPath(taskNodePath.substring(helper.getNamespace().length()));
@@ -434,8 +439,8 @@ public class TaskSubscriber extends ZookeeperMonitor {
         }
         zkPrepared = true;
         // 补偿由于网络问题导致的路径创建失败
-        doCompensation(() -> path2add.poll(), path -> createNode(path));
-        doCompensation(() -> path2remove.poll(), path -> removeRunningNode(path));
+        doCompensation(path2add::poll, this::createNode);
+        doCompensation(path2remove::poll, this::removeRunningNode);
     }
 
     /**

@@ -32,15 +32,6 @@ public abstract class ZookeeperMonitor {
      * @date    2020/8/16
      **/
     protected RegistryHelper getRegistryHelper() {
-        RegistryConfig config = getConfig();
-        if (null == helper) {
-            synchronized (config) {
-                if (null == helper) {
-                    helper = new RegistryHelper(config.getHosts(), config.getNamespace());
-                    helper.init();
-                }
-            }
-        }
         return helper;
     }
 
@@ -64,6 +55,9 @@ public abstract class ZookeeperMonitor {
      * @date    2020/8/16
      **/
     protected void init() {
+        RegistryConfig config = getConfig();
+        helper = new RegistryHelper(config.getHosts(), config.getNamespace());
+        helper.init();
         getRegistryHelper().subscribeStateChanges(new IZkStateListener() {
 
             @Override

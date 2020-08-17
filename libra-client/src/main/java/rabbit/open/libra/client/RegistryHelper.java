@@ -94,7 +94,7 @@ public class RegistryHelper {
      * @date 2020/7/14
      **/
     private String createNode(String fullPath, Object data, CreateMode mode) {
-        String sep = Task.SP;
+        String sep = Constant.SP;
         String[] nodes = fullPath.split(sep);
         StringBuilder path = new StringBuilder();
         boolean createError = false;
@@ -262,7 +262,7 @@ public class RegistryHelper {
         if (!system) {
             metaPath = META_TASKS;
         }
-        String path = namespace + metaPath + "/" + name;
+        String path = namespace + metaPath + Constant.SP + name;
         if (client.exists(path)) {
             client.writeData(path, data);
         } else {
