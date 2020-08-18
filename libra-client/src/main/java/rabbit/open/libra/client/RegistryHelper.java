@@ -33,6 +33,11 @@ public class RegistryHelper {
     public static final String META_SCHEDULER = "/meta/scheduler";
 
     /**
+     * 控制节点路径
+     **/
+    public static final String META_CONTROLLER = "/meta/controller";
+
+    /**
      * dag节点
      **/
     public static final String GRAPHS = "/graphs";
@@ -179,6 +184,7 @@ public class RegistryHelper {
         createNode("/meta");
         createNode(META_SCHEDULER);
         createNode(META_TASKS);
+        createNode(META_CONTROLLER);
         registerExecutor();
     }
 
@@ -223,6 +229,17 @@ public class RegistryHelper {
      **/
     public void unsubscribeChildChanges(String relativePath, IZkChildListener listener) {
         client.unsubscribeChildChanges(namespace + relativePath, listener);
+    }
+
+    /**
+     * 取消订阅
+     * @param relativePath
+     * @param listener
+     * @author xiaoqianbin
+     * @date 2020/7/16
+     **/
+    public void unsubscribeDataChanges(String relativePath, IZkDataListener listener) {
+        client.unsubscribeDataChanges(namespace + relativePath, listener);
     }
 
     /**

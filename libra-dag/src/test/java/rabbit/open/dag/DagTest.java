@@ -70,7 +70,7 @@ public class DagTest {
 		Semaphore s = new Semaphore(0);
 		DirectedAcyclicGraph<MyScheduleDagNode> graph = new MyDag(start, end) {
 			@Override
-			protected void onDagFinished() {
+			protected void onScheduleFinished() {
 				s.release();
 			}
 		};
@@ -171,6 +171,11 @@ public class DagTest {
 			counter.getAndAdd(2L);
 			graph.onDagNodeExecuted(this);
 		}
+
+		@Override
+		protected boolean isScheduled(ScheduleContext context) {
+			return ScheduleStatus.FINISHED == scheduleStatus;
+		}
 	}
 
 	public class MyDag extends DirectedAcyclicGraph<MyScheduleDagNode> {
@@ -180,7 +185,7 @@ public class DagTest {
 		}
 
 		@Override
-		protected void onDagFinished() {
+		protected void onScheduleFinished() {
 
 		}
 

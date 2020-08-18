@@ -59,9 +59,7 @@ public abstract class DagNode implements Serializable {
      * @author  xiaoqianbin
      * @date    2020/8/8
      **/
-    protected boolean isScheduled(ScheduleContext context) {
-        return ScheduleStatus.FINISHED == scheduleStatus;
-    }
+    protected abstract boolean isScheduled(ScheduleContext context);
 
     public List<DagNode> getNextNodes() {
         return nextNodes;

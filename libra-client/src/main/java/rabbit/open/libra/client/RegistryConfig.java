@@ -2,12 +2,15 @@ package rabbit.open.libra.client;
 
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.Serializable;
+
 /**
  * 注册中心配置对象
  * @author xiaoqianbin
  * @date 2020/8/16
  **/
-public class RegistryConfig {
+@SuppressWarnings("serial")
+public class RegistryConfig implements Serializable {
 
     // zk地址
     @Value("${zookeeper.hosts.url:localhost:2181}")

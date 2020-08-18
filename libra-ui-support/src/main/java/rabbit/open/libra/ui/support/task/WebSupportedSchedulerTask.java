@@ -25,33 +25,6 @@ public class WebSupportedSchedulerTask {
     @Resource
     private TaskExecutionRecordService recordService;
 
-   /* @Override
-    public void onTaskCompleted(String appName, String group, String taskName, String scheduleTime) {
-        TaskExecutionRecord record = recordService.createQuery().addFilter("appName", appName)
-                .addFilter("groupName", group)
-                .addFilter("scheduleTime", scheduleTime)
-                .addFilter("taskName", taskName).unique();
-        if (null == record) {
-            logger.error("task record[{}-{}-{}-{}] is lost", appName, group, taskName, scheduleTime);
-        } else {
-            recordService.createUpdate().addFilter("id", record.getId())
-                    .set("end", new Date()).execute();
-        }
-        logger.info("onTaskCompleted [{}-{}-{}-{}]", appName, group, taskName, scheduleTime);
-    }
-
-    @Override
-    public void onTaskStarted(String appName, String group, String taskName, String scheduleTime) {
-        logger.info("onTaskStarted [{}-{}-{}-{}]", appName, group, taskName, scheduleTime);
-        TaskExecutionRecord record = new TaskExecutionRecord();
-        record.setAppName(appName);
-        record.setGroupName(group);
-        record.setTaskName(taskName);
-        record.setScheduleTime(scheduleTime);
-        record.setStart(new Date());
-        recordService.add(record);
-    }*/
-
     public DialectType getDialectType() {
         return dialectType;
     }

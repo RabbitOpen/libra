@@ -31,7 +31,7 @@ public abstract class ZookeeperMonitor {
      * @author  xiaoqianbin
      * @date    2020/8/16
      **/
-    protected RegistryHelper getRegistryHelper() {
+    public RegistryHelper getRegistryHelper() {
         return helper;
     }
 

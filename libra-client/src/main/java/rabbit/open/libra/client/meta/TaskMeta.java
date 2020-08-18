@@ -15,9 +15,6 @@ import java.util.Date;
 @SuppressWarnings("serial")
 public class TaskMeta implements Serializable {
 
-    // 任务片
-    private transient Task task;
-
     /**
      * 切片个数
      * @author  xiaoqianbin
@@ -39,7 +36,6 @@ public class TaskMeta implements Serializable {
     private String taskName;
 
     public TaskMeta(Task task) {
-        setTask(task);
         setSplitsCount(task.getSplitsCount());
         setParallel(task.getConcurrenceCount());
         setTaskName(task.getTaskName());
@@ -70,14 +66,6 @@ public class TaskMeta implements Serializable {
                 return lastCompletionTime;
             }
         });
-    }
-
-    public Task getTask() {
-        return task;
-    }
-
-    public void setTask(Task task) {
-        this.task = task;
     }
 
     public int getSplitsCount() {

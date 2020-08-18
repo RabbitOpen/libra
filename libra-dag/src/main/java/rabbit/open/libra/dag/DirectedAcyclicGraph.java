@@ -120,7 +120,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 			}
 		} else {
 			flushContext();
-    		onDagFinished();
+    		onScheduleFinished();
 		}
 	}
 
@@ -159,7 +159,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 	 * @author  xiaoqianbin
 	 * @date    2020/8/10
 	 **/
-	protected abstract void onDagFinished();
+	protected abstract void onScheduleFinished();
 
 	/**
 	 * 调度节点
