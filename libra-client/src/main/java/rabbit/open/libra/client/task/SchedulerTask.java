@@ -11,7 +11,6 @@ import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -26,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2020/8/16
  **/
 @SuppressWarnings("serial")
-public class SchedulerTask extends ZookeeperMonitor implements Task, Serializable {
+public class SchedulerTask extends ZookeeperMonitor implements Task {
 
     @Autowired
     RegistryConfig config;
@@ -83,7 +82,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task, Serializabl
     @Override
     public void execute(ScheduleContext context) {
         String schedulePath = RegistryHelper.META_CONTROLLER + Constant.SP + getTaskName();
-        getRegistryHelper().subscribeChildChanges(schedulePath, (path, list) -> {
+        getRegistryHelper().subscribeChildChanges(RegistryHelper.META_CONTROLLER, (path, list) -> {
             if (!list.contains(getTaskName())) {
                 logger.info("leader is lost");
                 try2AcquireControl(schedulePath, getLeaderName(), CreateMode.EPHEMERAL);
@@ -152,9 +151,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task, Serializabl
         if (childChangedListenerMap.containsKey(RegistryHelper.GRAPHS)) {
             return;
         }
-        IZkChildListener listener = (path, list) -> {
-            updateDagMeta(list);
-        };
+        IZkChildListener listener = (path, list) -> updateDagMeta(list);
         childChangedListenerMap.put(RegistryHelper.GRAPHS, listener);
         helper.subscribeChildChanges(RegistryHelper.GRAPHS, listener);
         loadDagMeta();
