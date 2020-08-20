@@ -241,4 +241,12 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 	public Set<T> getRunningNodes() {
 		return runningNodes;
 	}
+
+	public T getHead() {
+		return head;
+	}
+
+	public T getTail() {
+		return tail;
+	}
 }

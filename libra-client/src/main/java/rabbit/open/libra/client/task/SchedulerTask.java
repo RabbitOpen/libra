@@ -5,6 +5,7 @@ import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.*;
+import rabbit.open.libra.client.anno.ConditionalOnMissingBean;
 import rabbit.open.libra.client.dag.SchedulableDag;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2020/8/16
  **/
 @SuppressWarnings("serial")
+@ConditionalOnMissingBean(SchedulerTask.class)
 public class SchedulerTask extends ZookeeperMonitor implements Task {
 
     @Autowired
@@ -163,7 +165,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
-    private void updateDagMeta(List<String> list) {
+    protected void updateDagMeta(List<String> list) {
         for (String dagId : list) {
             if (!dagMetaMap.containsKey(dagId)) {
                 String relativePath = RegistryHelper.GRAPHS + Constant.SP + dagId;
