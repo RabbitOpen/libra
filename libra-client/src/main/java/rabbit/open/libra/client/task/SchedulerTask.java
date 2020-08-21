@@ -6,7 +6,9 @@ import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.*;
 import rabbit.open.libra.client.anno.ConditionalOnMissingBean;
-import rabbit.open.libra.client.dag.SchedulableDag;
+import rabbit.open.libra.client.dag.DistributedTaskNode;
+import rabbit.open.libra.client.dag.RuntimeDagInstance;
+import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
@@ -16,9 +18,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * 调度任务
@@ -62,18 +66,64 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
     private Map<String, IZkDataListener> dataChangedListenerMap = new ConcurrentHashMap<>();
 
     /**
+     * dag 数据变更监听器
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    protected Supplier<IZkDataListener> dagDataChangedListenerSupplier;
+
+    /**
      * dag meta信息 key 是dag id信息
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
-    private Map<String, SchedulableDag> dagMetaMap = new ConcurrentHashMap<>();
+    protected Map<String, SchedulableDirectedAcyclicGraph> dagMetaMap = new ConcurrentHashMap<>();
+
+    /**
+     * dag 运行时meta信息 key 是schedule id信息
+     * @author  xiaoqianbin
+     * @date    2020/8/18
+     **/
+    protected Map<String, SchedulableDirectedAcyclicGraph> dagRuntimeMap = new ConcurrentHashMap<>();
 
     @PostConstruct
     @Override
     public void init() {
         super.init();
+        createDagDataChangedListenerSupplier();
         registerTaskMeta();
         execute(null);
+    }
+
+    /**
+     * 创建dag数据变更监听器
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    protected void createDagDataChangedListenerSupplier() {
+        dagDataChangedListenerSupplier = () ->  new IZkDataListener() {
+            @Override
+            public void handleDataChange(String path, Object data) {
+                String[] nodes = path.split("/");
+                updateDagMetaMap(nodes[nodes.length - 1], (SchedulableDirectedAcyclicGraph) data);
+            }
+
+            @Override
+            public void handleDataDeleted(String s) {
+                // to do: i don't care
+            }
+        };
+    }
+
+    /**
+     * 更新dag meta map信息
+     * @param	key
+	 * @param	dag
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    protected void updateDagMetaMap(String key, SchedulableDirectedAcyclicGraph dag) {
+        dagMetaMap.put(key, dag);
     }
 
     @Override
@@ -132,6 +182,45 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      **/
     protected void doSchedule() {
         addDagReloadListener();
+        loadDagMetas();
+        loadRuntimeMetas();
+        doRunningDagRecovering();
+    }
+
+    /**
+     * 恢复未完成的dag
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    protected void doRunningDagRecovering() {
+        if (dagRuntimeMap.isEmpty()) {
+            return;
+        }
+        logger.info("begin to recover unfinished schedules");
+        for (Map.Entry<String, SchedulableDirectedAcyclicGraph> dagEntry : dagRuntimeMap.entrySet()) {
+            Set<DistributedTaskNode> runningNodes = dagEntry.getValue().getRunningNodes();
+            for (DistributedTaskNode runningNode : runningNodes) {
+                runningNode.doSchedule(this);
+            }
+        }
+        logger.info("all unfinished schedules are recovered");
+    }
+
+    /**
+     * 加载运行时meta信息
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    protected void loadRuntimeMetas() {
+        logger.info("begin to load running dag metas......");
+        for (String dag : dagMetaMap.keySet()) {
+            String relativePath = RegistryHelper.GRAPHS + Constant.SP + dag;
+            List<String> children = helper.getChildren(relativePath);
+            for (String child : children) {
+                dagRuntimeMap.put(child, helper.readData(relativePath + Constant.SP + child));
+            }
+        }
+        logger.info("found [{}] running dag metas!", dagRuntimeMap.size());
     }
 
     /**
@@ -140,8 +229,8 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
-    public void createDagNode(SchedulableDag dag) {
-        helper.create(RegistryHelper.GRAPHS + Constant.SP + dag.getDagMeta().getDagId(), dag, CreateMode.PERSISTENT);
+    public void createDagNode(SchedulableDirectedAcyclicGraph dag) {
+        helper.create(RegistryHelper.GRAPHS + Constant.SP + dag.getDagId(), dag, CreateMode.PERSISTENT);
     }
 
     /**
@@ -153,26 +242,21 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         if (childChangedListenerMap.containsKey(RegistryHelper.GRAPHS)) {
             return;
         }
-        IZkChildListener listener = (path, list) -> updateDagMeta(list);
+        IZkChildListener listener = (path, list) -> onDagListChanged(list);
         childChangedListenerMap.put(RegistryHelper.GRAPHS, listener);
         helper.subscribeChildChanges(RegistryHelper.GRAPHS, listener);
-        loadDagMeta();
     }
 
     /**
-     * 更新dag信息
+     * dag信息变更处理
      * @param	list
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
-    protected void updateDagMeta(List<String> list) {
+    protected void onDagListChanged(List<String> list) {
         for (String dagId : list) {
             if (!dagMetaMap.containsKey(dagId)) {
-                String relativePath = RegistryHelper.GRAPHS + Constant.SP + dagId;
-                IZkDataListener listener = getDagDataChangeListener();
-                dagMetaMap.put(dagId, helper.readData(relativePath));
-                helper.subscribeDataChanges(relativePath, listener);
-                dataChangedListenerMap.put(relativePath, listener);
+                processMetaInfoByDagId(dagId);
             }
         }
         for (String id : dagMetaMap.keySet()) {
@@ -186,23 +270,43 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
     }
 
     /**
+     * 保存运行时dag
+     * @param	dag
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    public void saveRuntimeGraph(SchedulableDirectedAcyclicGraph dag) {
+        RuntimeDagInstance rdi = (RuntimeDagInstance) dag;
+        helper.writeData(RegistryHelper.GRAPHS + Constant.SP + dag.getDagId() + Constant.SP + rdi.getScheduleId(), dag);
+    }
+
+    /**
+     * 根据dag id信息处理meta信息
+     * @param	dagId
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    private void processMetaInfoByDagId(String dagId) {
+        String relativePath = RegistryHelper.GRAPHS + Constant.SP + dagId;
+        try {
+            SchedulableDirectedAcyclicGraph dag = helper.readData(relativePath);
+            dag.setTask(this);
+            updateDagMetaMap(dagId, dag);
+            IZkDataListener listener = getDagDataChangeListener();
+            helper.subscribeDataChanges(relativePath, listener);
+            dataChangedListenerMap.put(relativePath, listener);
+        } catch (Exception e) {
+            logger.error("node[{}]  dag info reading error", dagId);
+        }
+    }
+
+    /**
      * dag数据变更监听器
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
     private IZkDataListener getDagDataChangeListener() {
-        return new IZkDataListener() {
-            @Override
-            public void handleDataChange(String path, Object data) throws Exception {
-                String[] nodes = path.split("/");
-                dagMetaMap.put(nodes[nodes.length -1], (SchedulableDag)data);
-            }
-
-            @Override
-            public void handleDataDeleted(String s) throws Exception {
-                // to do: i don't care
-            }
-        };
+        return dagDataChangedListenerSupplier.get();
     }
 
     /**
@@ -210,15 +314,23 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
-    protected void loadDagMeta() {
+    protected void loadDagMetas() {
+        logger.info("begin to load dag metas....");
         List<String> children = helper.getChildren(RegistryHelper.GRAPHS);
         for (String dagId : children) {
-            String relativePath = RegistryHelper.GRAPHS + Constant.SP + dagId;
-            dagMetaMap.put(dagId, helper.readData(relativePath));
-            IZkDataListener listener = getDagDataChangeListener();
-            helper.subscribeDataChanges(relativePath, listener);
-            dataChangedListenerMap.put(relativePath, listener);
+            processMetaInfoByDagId(dagId);
         }
+        logger.info("dag metas loading finished, found [{}] dag info", dagMetaMap.size());
+    }
+
+    /**
+     * 更新dag信息
+     * @param	dag
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    public void updateDagInfo(SchedulableDirectedAcyclicGraph dag) {
+        helper.writeData(RegistryHelper.GRAPHS + Constant.SP + dag.getDagId(), dag);
     }
 
     /**

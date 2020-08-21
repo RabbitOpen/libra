@@ -9,7 +9,6 @@ import rabbit.open.libra.dag.DirectedAcyclicGraph;
 import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.exception.CyclicDagException;
 import rabbit.open.libra.dag.exception.NoPathException;
-import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -167,13 +166,13 @@ public class DagTest {
 		}
 
 		@Override
-		public void doSchedule(ScheduleContext context) {
+		public void doSchedule() {
 			counter.getAndAdd(2L);
 			graph.onDagNodeExecuted(this);
 		}
 
 		@Override
-		protected boolean isScheduled(ScheduleContext context) {
+		protected boolean isScheduled() {
 			return ScheduleStatus.FINISHED == scheduleStatus;
 		}
 	}
@@ -190,12 +189,7 @@ public class DagTest {
 		}
 
 		@Override
-		protected ScheduleContext getContext() {
-			return null;
-		}
-
-		@Override
-		protected void flushContext() {
+		protected void saveGraph() {
 
 		}
 	}

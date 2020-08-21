@@ -17,5 +17,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Conditional(OnBeanCondition.class)
 public @interface ConditionalOnMissingBean {
+    /**
+     * 希望排除的注册
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
     Class<?> value();
 }

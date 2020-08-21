@@ -9,8 +9,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import rabbit.open.libra.client.Constant;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.dag.DistributedTaskNode;
-import rabbit.open.libra.client.dag.SchedulableDag;
-import rabbit.open.libra.client.meta.DagMeta;
+import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.test.tasks.MySchedulerTask;
 import rabbit.open.libra.test.tasks.Task1;
@@ -46,22 +45,39 @@ public class DistributedTaskTest implements Serializable {
         head.addNextNode(task);
         task.addNextNode(tail);
         Semaphore s = new Semaphore(0);
-        SchedulableDag dag = new SchedulableDag(head, tail);
+        SchedulableDirectedAcyclicGraph dag = new SchedulableDirectedAcyclicGraph(head, tail);
         String dagId = "my-dag-id";
-        dag.setDagMeta(new DagMeta("测试dag", dagId, "0 * * * * *"));
-        st.getRegistryHelper().deleteRecursive(RegistryHelper.GRAPHS + Constant.SP + dag.getDagMeta().getDagId());
+        dag.setDagName("测试dag");
+        dag.setCronExpression("0 * * * * *");
+        dag.setDagId(dagId);
+        st.getRegistryHelper().deleteRecursive(RegistryHelper.GRAPHS + Constant.SP + dag.getDagId());
         st.createDagNode(dag);
-        SchedulableDag o = st.getRegistryHelper().readData(RegistryHelper.GRAPHS + Constant.SP + dag.getDagMeta().getDagId());
-        TestCase.assertEquals(o.getDagMeta().getDagName(), dag.getDagMeta().getDagName());
-        Map<String, SchedulableDag>  dagMetaMap = getObjectValue("dagMetaMap", st, SchedulerTask.class);
+        SchedulableDirectedAcyclicGraph o = st.getRegistryHelper().readData(RegistryHelper.GRAPHS + Constant.SP + dag.getDagId());
+        TestCase.assertEquals(o.getDagName(), dag.getDagName());
+        Map<String, SchedulableDirectedAcyclicGraph>  dagMetaMap = getObjectValue("dagMetaMap", st, SchedulerTask.class);
         st.setLoadMeta(() -> {
             s.release();
         });
         s.acquire();
         TestCase.assertEquals(((MyDistributedTaskNode)dagMetaMap.get(dagId).getHead()).getName(), "head");
+        s.drainPermits();
+        head.setName("newHead");
+        st.updateDagInfo(dag, () -> {
+            s.release();
+        });
+        s.acquire();
+        TestCase.assertEquals(((MyDistributedTaskNode)dagMetaMap.get(dagId).getHead()).getName(), "newHead");
     }
 
-    public <T> T getObjectValue(String field, Object obj, Class<?> clz) throws NoSuchFieldException, IllegalAccessException {
+    /**
+     * 反射取值
+     * @param	field       字段名
+	 * @param	obj         对象
+	 * @param	clz         字段所属的类（obj的类或者obj的父类）
+     * @author  xiaoqianbin
+     * @date    2020/8/20
+     **/
+    private <T> T getObjectValue(String field, Object obj, Class<?> clz) throws NoSuchFieldException, IllegalAccessException {
         Field f = clz.getDeclaredField(field);
         f.setAccessible(true);
         return (T) f.get(obj);

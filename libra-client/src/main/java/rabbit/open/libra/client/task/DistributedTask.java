@@ -2,7 +2,6 @@ package rabbit.open.libra.client.task;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.Task;
-import rabbit.open.libra.client.monitor.TaskSubscriber;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import javax.annotation.PostConstruct;

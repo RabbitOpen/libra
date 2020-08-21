@@ -1,4 +1,4 @@
-package rabbit.open.libra.client.monitor;
+package rabbit.open.libra.client.task;
 
 import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.zookeeper.CreateMode;
@@ -11,7 +11,6 @@ import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.ZookeeperMonitor;
 import rabbit.open.libra.client.meta.TaskExecutionMeta;
 import rabbit.open.libra.client.meta.TaskMeta;
-import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import javax.annotation.PostConstruct;

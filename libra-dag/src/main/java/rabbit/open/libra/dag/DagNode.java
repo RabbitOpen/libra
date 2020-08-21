@@ -1,7 +1,5 @@
 package rabbit.open.libra.dag;
 
-import rabbit.open.libra.dag.schedule.ScheduleContext;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,19 +45,17 @@ public abstract class DagNode implements Serializable {
 
     /**
      * 执行调度
-     * @param   context
      * @author  xiaoqianbin
      * @date    2020/8/8
      **/
-    public abstract void doSchedule(ScheduleContext context);
+    public abstract void doSchedule();
 
     /**
      * 判断节点是否已经被调度过
-     * @param	context
      * @author  xiaoqianbin
      * @date    2020/8/8
      **/
-    protected abstract boolean isScheduled(ScheduleContext context);
+    protected abstract boolean isScheduled();
 
     public List<DagNode> getNextNodes() {
         return nextNodes;

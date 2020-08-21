@@ -2,7 +2,7 @@ package rabbit.open.libra.client.anno;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import rabbit.open.libra.client.monitor.TaskSubscriber;
+import rabbit.open.libra.client.task.TaskSubscriber;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

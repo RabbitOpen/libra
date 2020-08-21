@@ -1,6 +1,7 @@
 package rabbit.open.libra.test.tasks;
 
 import org.springframework.stereotype.Component;
+import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.task.SchedulerTask;
 
 /**
@@ -12,9 +13,11 @@ public class MySchedulerTask extends SchedulerTask {
 
     private Runnable loadMeta;
 
+    private Runnable updateCallback;
+
     @Override
-    protected void loadDagMeta() {
-        super.loadDagMeta();
+    protected void loadDagMetas() {
+        super.loadDagMetas();
         if (null != loadMeta) {
             loadMeta.run();
         }
@@ -24,4 +27,16 @@ public class MySchedulerTask extends SchedulerTask {
         this.loadMeta = loadMeta;
     }
 
+    public void updateDagInfo(SchedulableDirectedAcyclicGraph dag, Runnable r) {
+        super.updateDagInfo(dag);
+        this.updateCallback = r;
+    }
+
+    @Override
+    protected void updateDagMetaMap(String key, SchedulableDirectedAcyclicGraph dag) {
+        super.updateDagMetaMap(key, dag);
+        if (null != updateCallback) {
+            updateCallback.run();
+        }
+    }
 }

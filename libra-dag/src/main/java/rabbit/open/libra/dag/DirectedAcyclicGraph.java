@@ -2,7 +2,6 @@ package rabbit.open.libra.dag;
 
 import rabbit.open.libra.dag.exception.CyclicDagException;
 import rabbit.open.libra.dag.exception.NoPathException;
-import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -95,8 +94,8 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 		if (runningNodes.isEmpty()) {
 			addRunningNode(head);
 			head.setScheduleStatus(ScheduleStatus.RUNNING);
-			flushContext();
-			scheduleDagNode((T) head, getContext());
+			saveGraph();
+			scheduleDagNode((T) head);
 		}
     }
 
@@ -114,12 +113,12 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 				addRunningNode((T) nextNode);
 				nextNode.setScheduleStatus(ScheduleStatus.RUNNING);
 			}
-			flushContext();
+			saveGraph();
 			for (DagNode nextNode : node.getNextNodes()) {
-			 	scheduleDagNode((T) nextNode, getContext());
+			 	scheduleDagNode((T) nextNode);
 			}
 		} else {
-			flushContext();
+			saveGraph();
     		onScheduleFinished();
 		}
 	}
@@ -164,36 +163,28 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 	/**
 	 * 调度节点
 	 * @param	node
-	 * @param	context
 	 * @author  xiaoqianbin
 	 * @date    2020/8/10
 	 **/
-	protected void scheduleDagNode(T node, ScheduleContext context) {
+	protected void scheduleDagNode(T node) {
 		if (node.getPreNodes().isEmpty()) {
-			node.doSchedule(context);
+			node.doSchedule();
 		} else {
 			for (DagNode preNode : node.getPreNodes()) {
-				if (!preNode.isScheduled(context)) {
+				if (!preNode.isScheduled()) {
 					return;
 				}
 			}
-			node.doSchedule(context);
+			node.doSchedule();
 		}
 	}
 
-	/**
-     * 获取调度上下文信息
-     * @author  xiaoqianbin
-     * @date    2020/8/10
-     **/
-    protected abstract ScheduleContext getContext();
-
     /**
-     * 持久化context
+     * 持久化dag
      * @author  xiaoqianbin
      * @date    2020/8/10
      **/
-    protected abstract void flushContext();
+    protected abstract void saveGraph();
 
     /**
      * <b>@description 环检测 </b>
