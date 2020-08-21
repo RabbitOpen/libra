@@ -48,7 +48,7 @@ public abstract class DagNode implements Serializable {
      * @author  xiaoqianbin
      * @date    2020/8/8
      **/
-    public abstract void doSchedule();
+    protected abstract void doSchedule();
 
     /**
      * 判断节点是否已经被调度过
@@ -69,8 +69,7 @@ public abstract class DagNode implements Serializable {
         this.scheduleStatus = scheduleStatus;
     }
 
-    @SuppressWarnings("rawtypes")
-    public DirectedAcyclicGraph getGraph() {
+    public DirectedAcyclicGraph<? extends DagNode> getGraph() {
         return graph;
     }
 

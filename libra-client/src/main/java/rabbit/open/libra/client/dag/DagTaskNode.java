@@ -13,18 +13,18 @@ import rabbit.open.libra.dag.ScheduleStatus;
  **/
 public class DagTaskNode extends DagNode {
 
-    protected Logger logger = LoggerFactory.getLogger(getClass());
+    protected transient Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected SchedulerTask task;
+    protected transient SchedulerTask task;
 
-    //
+    // 执行调度
     public void doSchedule(SchedulerTask task) {
         this.task = task;
         doSchedule();
     }
 
     @Override
-    public void doSchedule() {
+    protected void doSchedule() {
 
     }
 

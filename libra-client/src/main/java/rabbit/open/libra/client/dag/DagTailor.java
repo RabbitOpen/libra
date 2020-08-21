@@ -7,9 +7,8 @@ package rabbit.open.libra.client.dag;
  **/
 public class DagTailor extends DagTaskNode {
 
-
     @Override
-    public void doSchedule() {
-        graph.onDagNodeExecuted(this);
+    protected void doSchedule() {
+        getGraph().onDagNodeExecuted(this);
     }
 }

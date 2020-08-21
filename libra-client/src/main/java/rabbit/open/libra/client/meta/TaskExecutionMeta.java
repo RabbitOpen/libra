@@ -2,7 +2,6 @@ package rabbit.open.libra.client.meta;
 
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
-import java.io.Serializable;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -11,7 +10,7 @@ import java.util.concurrent.Semaphore;
  * @date 2020/8/15
  **/
 @SuppressWarnings("serial")
-public class TaskExecutionMeta extends ScheduleContext implements Serializable {
+public class TaskExecutionMeta extends ScheduleContext {
 
     private Semaphore semaphore;
 
