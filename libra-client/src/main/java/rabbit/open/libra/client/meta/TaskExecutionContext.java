@@ -14,6 +14,10 @@ public class TaskExecutionContext extends ScheduleContext {
 
     private Semaphore semaphore;
 
+    private String taskName;
+
+    private String appName;
+
     public TaskExecutionContext(int parallel) {
         this.setParallel(parallel);
         this.semaphore = new Semaphore(getParallel());
@@ -46,4 +50,19 @@ public class TaskExecutionContext extends ScheduleContext {
         semaphore.release();
     }
 
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+
+    public String getAppName() {
+        return appName;
+    }
+
+    public void setAppName(String appName) {
+        this.appName = appName;
+    }
 }
