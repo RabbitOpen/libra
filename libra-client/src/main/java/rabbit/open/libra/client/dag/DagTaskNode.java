@@ -2,6 +2,7 @@ package rabbit.open.libra.client.dag;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rabbit.open.libra.client.meta.TaskExecutionContext;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.dag.DagNode;
 import rabbit.open.libra.dag.ScheduleStatus;
@@ -16,6 +17,8 @@ public class DagTaskNode extends DagNode {
     protected transient Logger logger = LoggerFactory.getLogger(getClass());
 
     protected transient SchedulerTask task;
+
+    private TaskExecutionContext executionContext;
 
     // 执行调度
     public void doSchedule(SchedulerTask task) {

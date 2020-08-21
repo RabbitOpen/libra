@@ -10,11 +10,11 @@ import java.util.concurrent.Semaphore;
  * @date 2020/8/15
  **/
 @SuppressWarnings("serial")
-public class TaskExecutionMeta extends ScheduleContext {
+public class TaskExecutionContext extends ScheduleContext {
 
     private Semaphore semaphore;
 
-    public TaskExecutionMeta(int parallel) {
+    public TaskExecutionContext(int parallel) {
         this.setParallel(parallel);
         this.semaphore = new Semaphore(getParallel());
     }

@@ -9,7 +9,7 @@ import rabbit.open.libra.client.Constant;
 import rabbit.open.libra.client.RegistryConfig;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.ZookeeperMonitor;
-import rabbit.open.libra.client.meta.TaskExecutionMeta;
+import rabbit.open.libra.client.meta.TaskExecutionContext;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
@@ -74,7 +74,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
     /**
      * 任务执行元信息（key是taskId）
      **/
-    private Map<String, TaskExecutionMeta> taskExecutionMetaMap = new ConcurrentHashMap<>();
+    private Map<String, TaskExecutionContext> taskExecutionMetaMap = new ConcurrentHashMap<>();
 
     /**
      * 待扫描路径队列
@@ -174,7 +174,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
      **/
     private void loadTaskById(String taskMetaNodePath, String taskId) {
         String taskIdPath = taskMetaNodePath + Constant.SP + taskId;
-        TaskExecutionMeta meta = getTaskMeta(taskMetaNodePath, taskId);
+        TaskExecutionContext meta = getTaskMeta(taskMetaNodePath, taskId);
         if (!meta.hasQuota()) {
             return;
         }
@@ -200,11 +200,11 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @author  xiaoqianbin
      * @date    2020/8/15
      **/
-    private TaskExecutionMeta getTaskMeta(String taskMetaNodePath, String taskId) {
+    private TaskExecutionContext getTaskMeta(String taskMetaNodePath, String taskId) {
         if (!taskExecutionMetaMap.containsKey(taskId)) {
             synchronized (taskMap.get(taskMetaNodePath)) {
                 if (!taskExecutionMetaMap.containsKey(taskId)) {
-                    TaskExecutionMeta meta = helper.readData(taskMetaNodePath);
+                    TaskExecutionContext meta = helper.readData(taskMetaNodePath);
                     taskExecutionMetaMap.put(taskId, meta);
                 }
             }
@@ -221,7 +221,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @author  xiaoqianbin
      * @date    2020/8/15
      **/
-    private boolean try2SubmitTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionMeta meta, int index) {
+    private boolean try2SubmitTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionContext meta, int index) {
         if (tryAcquireTaskPiece(taskIdPath + "/R-" + index)) {
             taskRunner.submit(() -> {
                 try {
@@ -251,7 +251,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @author  xiaoqianbin
      * @date    2020/8/15
      **/
-    private void fetchNextTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionMeta meta) {
+    private void fetchNextTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionContext meta) {
         try {
             List<String> pieces = helper.getChildren(taskIdPath);
             List<String> finishedPieces = pieces.stream().filter(s -> !(s.startsWith("R-") || s.startsWith("E-"))).collect(Collectors.toList());
@@ -303,7 +303,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * @author  xiaoqianbin
      * @date    2020/8/15
      **/
-    private ScheduleContext getContextFromMeta(TaskExecutionMeta meta) {
+    private ScheduleContext getContextFromMeta(TaskExecutionContext meta) {
         ScheduleContext context = new ScheduleContext();
         context.setIndex(meta.getIndex());
         context.setScheduleDate(meta.getScheduleDate());
