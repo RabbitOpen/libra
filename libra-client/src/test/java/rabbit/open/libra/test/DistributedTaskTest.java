@@ -8,7 +8,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import rabbit.open.libra.client.Constant;
 import rabbit.open.libra.client.RegistryHelper;
-import rabbit.open.libra.client.dag.DistributedTaskNode;
+import rabbit.open.libra.client.dag.DagTaskNode;
 import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.test.tasks.MySchedulerTask;
@@ -39,9 +39,9 @@ public class DistributedTaskTest implements Serializable {
 
     @Test
     public void simpleTest() throws NoSuchFieldException, IllegalAccessException, InterruptedException {
-        MyDistributedTaskNode head = new MyDistributedTaskNode("head");
-        DistributedTaskNode task = new MyDistributedTaskNode("task");
-        DistributedTaskNode tail = new MyDistributedTaskNode("tail");
+        MyDagTaskNode head = new MyDagTaskNode("head");
+        DagTaskNode task = new MyDagTaskNode("task");
+        DagTaskNode tail = new MyDagTaskNode("tail");
         head.addNextNode(task);
         task.addNextNode(tail);
         Semaphore s = new Semaphore(0);
@@ -59,14 +59,14 @@ public class DistributedTaskTest implements Serializable {
             s.release();
         });
         s.acquire();
-        TestCase.assertEquals(((MyDistributedTaskNode)dagMetaMap.get(dagId).getHead()).getName(), "head");
+        TestCase.assertEquals(((MyDagTaskNode)dagMetaMap.get(dagId).getHead()).getName(), "head");
         s.drainPermits();
         head.setName("newHead");
         st.updateDagInfo(dag, () -> {
             s.release();
         });
         s.acquire();
-        TestCase.assertEquals(((MyDistributedTaskNode)dagMetaMap.get(dagId).getHead()).getName(), "newHead");
+        TestCase.assertEquals(((MyDagTaskNode)dagMetaMap.get(dagId).getHead()).getName(), "newHead");
     }
 
     /**

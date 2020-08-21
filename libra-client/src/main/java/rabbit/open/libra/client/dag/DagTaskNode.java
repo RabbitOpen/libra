@@ -7,11 +7,11 @@ import rabbit.open.libra.dag.DagNode;
 import rabbit.open.libra.dag.ScheduleStatus;
 
 /**
- * 分布式任务节点
+ * dag任务节点
  * @author xiaoqianbin
  * @date 2020/8/18
  **/
-public class DistributedTaskNode extends DagNode {
+public class DagTaskNode extends DagNode {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -25,8 +25,6 @@ public class DistributedTaskNode extends DagNode {
 
     @Override
     public void doSchedule() {
-
-        logger.info("create schedule task id ------------------");
 
     }
 

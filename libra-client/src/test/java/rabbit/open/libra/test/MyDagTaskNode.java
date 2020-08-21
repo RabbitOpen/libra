@@ -1,16 +1,16 @@
 package rabbit.open.libra.test;
 
-import rabbit.open.libra.client.dag.DistributedTaskNode;
+import rabbit.open.libra.client.dag.DagTaskNode;
 
 /**
  * @author xiaoqianbin
  * @date 2020/8/18
  **/
-public class MyDistributedTaskNode extends DistributedTaskNode {
+public class MyDagTaskNode extends DagTaskNode {
 
     private String name;
 
-    public MyDistributedTaskNode(String name) {
+    public MyDagTaskNode(String name) {
         this.name = name;
     }
 

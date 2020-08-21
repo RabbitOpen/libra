@@ -5,5 +5,11 @@ package rabbit.open.libra.client.dag;
  * @author xiaoqianbin
  * @date 2020/8/21
  **/
-public class DagTailor extends DistributedTaskNode {
+public class DagTailor extends DagTaskNode {
+
+
+    @Override
+    public void doSchedule() {
+        graph.onDagNodeExecuted(this);
+    }
 }

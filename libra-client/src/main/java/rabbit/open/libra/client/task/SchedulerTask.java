@@ -6,7 +6,7 @@ import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.*;
 import rabbit.open.libra.client.anno.ConditionalOnMissingBean;
-import rabbit.open.libra.client.dag.DistributedTaskNode;
+import rabbit.open.libra.client.dag.DagTaskNode;
 import rabbit.open.libra.client.dag.RuntimeDagInstance;
 import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.meta.TaskMeta;
@@ -198,8 +198,9 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         }
         logger.info("begin to recover unfinished schedules");
         for (Map.Entry<String, SchedulableDirectedAcyclicGraph> dagEntry : dagRuntimeMap.entrySet()) {
-            Set<DistributedTaskNode> runningNodes = dagEntry.getValue().getRunningNodes();
-            for (DistributedTaskNode runningNode : runningNodes) {
+            Set<DagTaskNode> runningNodes = dagEntry.getValue().getRunningNodes();
+            for (DagTaskNode runningNode : runningNodes) {
+                runningNode.setGraph(dagEntry.getValue());
                 runningNode.doSchedule(this);
             }
         }

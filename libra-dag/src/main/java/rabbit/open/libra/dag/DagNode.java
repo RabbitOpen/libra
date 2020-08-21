@@ -30,7 +30,7 @@ public abstract class DagNode implements Serializable {
     /**
      * 节点所属dag图
      **/
-    protected DirectedAcyclicGraph<? extends DagNode> graph;
+    protected transient DirectedAcyclicGraph<? extends DagNode> graph;
 
     /**
      * 添加后续节点

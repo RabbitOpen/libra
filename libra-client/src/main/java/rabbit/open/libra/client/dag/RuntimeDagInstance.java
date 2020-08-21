@@ -10,7 +10,7 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
     // 调度id
     private String scheduleId;
 
-    public RuntimeDagInstance(DistributedTaskNode head, DistributedTaskNode tail, int maxNodeSize) {
+    public RuntimeDagInstance(DagTaskNode head, DagTaskNode tail, int maxNodeSize) {
         super(head, tail, maxNodeSize);
     }
 

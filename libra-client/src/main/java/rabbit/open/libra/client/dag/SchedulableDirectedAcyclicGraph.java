@@ -10,7 +10,7 @@ import java.util.Date;
  * @author xiaoqianbin
  * @date 2020/8/18
  **/
-public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DistributedTaskNode> implements VersionedData {
+public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> implements VersionedData {
 
     // dag name
     private String dagName;
@@ -31,11 +31,11 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<Distri
      **/
     private int version = 0;
 
-    public SchedulableDirectedAcyclicGraph(DistributedTaskNode head, DistributedTaskNode tail) {
+    public SchedulableDirectedAcyclicGraph(DagTaskNode head, DagTaskNode tail) {
         super(head, tail);
     }
 
-    public SchedulableDirectedAcyclicGraph(DistributedTaskNode head, DistributedTaskNode tail, int maxNodeSize) {
+    public SchedulableDirectedAcyclicGraph(DagTaskNode head, DagTaskNode tail, int maxNodeSize) {
         super(head, tail, maxNodeSize);
     }
 
