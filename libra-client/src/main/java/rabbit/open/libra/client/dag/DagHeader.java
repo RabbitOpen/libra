@@ -5,6 +5,7 @@ package rabbit.open.libra.client.dag;
  * @author xiaoqianbin
  * @date 2020/8/21
  **/
+@SuppressWarnings("serial")
 public class DagHeader extends DagTaskNode {
 
     @Override

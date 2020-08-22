@@ -15,7 +15,6 @@ import rabbit.open.libra.test.tasks.MySchedulerTask;
 import rabbit.open.libra.test.tasks.Task1;
 
 import javax.annotation.Resource;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -26,7 +25,7 @@ import java.util.concurrent.Semaphore;
  **/
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({"classpath*:/applicationContext.xml"})
-public class DistributedTaskTest implements Serializable {
+public class DistributedTaskTest {
 
     @Resource
     MySchedulerTask st;
@@ -77,7 +76,8 @@ public class DistributedTaskTest implements Serializable {
      * @author  xiaoqianbin
      * @date    2020/8/20
      **/
-    private <T> T getObjectValue(String field, Object obj, Class<?> clz) throws NoSuchFieldException, IllegalAccessException {
+    @SuppressWarnings("unchecked")
+	private <T> T getObjectValue(String field, Object obj, Class<?> clz) throws NoSuchFieldException, IllegalAccessException {
         Field f = clz.getDeclaredField(field);
         f.setAccessible(true);
         return (T) f.get(obj);

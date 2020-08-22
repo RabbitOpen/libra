@@ -16,6 +16,7 @@ import static rabbit.open.libra.client.Constant.SP;
  * @author xiaoqianbin
  * @date 2020/8/18
  **/
+@SuppressWarnings("serial")
 public class DagTaskNode extends DagNode {
 
     protected transient Logger logger = LoggerFactory.getLogger(getClass());

@@ -5,6 +5,7 @@ package rabbit.open.libra.client.dag;
  * @author xiaoqianbin
  * @date 2020/8/20
  **/
+@SuppressWarnings("serial")
 public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
 
     // 调度id

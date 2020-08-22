@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author xiaoqianbin
  * @date 2020/8/7
  **/
-@SuppressWarnings("serial")
+@SuppressWarnings({"serial", "unchecked"})
 public abstract class DirectedAcyclicGraph<T extends DagNode> implements Serializable {
 
 	/**
@@ -196,7 +196,6 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 		doCycleChecking(this.head, path);
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void doCycleChecking(T from, List<T> path) {
 		List<T> pathList = new ArrayList<>(path);
 		for (DagNode nextNode : from.getNextNodes()) {
