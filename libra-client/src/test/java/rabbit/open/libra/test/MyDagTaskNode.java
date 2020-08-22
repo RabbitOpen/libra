@@ -9,22 +9,12 @@ import rabbit.open.libra.client.dag.DagTaskNode;
 @SuppressWarnings("serial")
 public class MyDagTaskNode extends DagTaskNode {
 
-    private String name;
-
     public MyDagTaskNode(String name) {
-        this.name = name;
+        super(name, 1, 1, "test-app");
     }
 
     @Override
     public String toString() {
-        return name;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+        return taskName;
     }
 }
