@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @date 2020/8/8
  **/
 @RunWith(JUnit4.class)
+@SuppressWarnings("serial")
 public class DagTest {
 
 	/**

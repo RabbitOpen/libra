@@ -29,7 +29,6 @@ import java.util.function.Supplier;
  * @author xiaoqianbin
  * @date 2020/8/16
  **/
-@SuppressWarnings("serial")
 @ConditionalOnMissingBean(SchedulerTask.class)
 public class SchedulerTask extends ZookeeperMonitor implements Task {
 

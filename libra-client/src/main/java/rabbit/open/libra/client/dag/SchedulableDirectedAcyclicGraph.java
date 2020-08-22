@@ -10,6 +10,7 @@ import java.util.Date;
  * @author xiaoqianbin
  * @date 2020/8/18
  **/
+@SuppressWarnings("serial")
 public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> implements VersionedData {
 
     // dag name
