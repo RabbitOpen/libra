@@ -1,5 +1,7 @@
 package rabbit.open.libra.client.dag;
 
+import java.util.Date;
+
 /**
  * dag运行态实例
  * @author xiaoqianbin
@@ -10,7 +12,17 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
 
     // 调度id
     private String scheduleId;
+    
+    /**
+     * 业务调度日期
+     */
+    private Date scheduleDate;
 
+    /**
+     * 实际调度时间
+     */
+    private Date fireDate;
+    
     public RuntimeDagInstance(DagTaskNode head, DagTaskNode tail, int maxNodeSize) {
         super(head, tail, maxNodeSize);
     }
@@ -22,4 +34,21 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
     public void setScheduleId(String scheduleId) {
         this.scheduleId = scheduleId;
     }
+
+	public Date getScheduleDate() {
+		return scheduleDate;
+	}
+
+	public void setScheduleDate(Date scheduleDate) {
+		this.scheduleDate = scheduleDate;
+	}
+
+	public Date getFireDate() {
+		return fireDate;
+	}
+
+	public void setFireDate(Date fireDate) {
+		this.fireDate = fireDate;
+	}
+    
 }

@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.util.CollectionUtils;
-import rabbit.open.libra.client.anno.ConditionalOnMissingBean;
+import rabbit.open.libra.client.anno.ConditionalOnMissingBeanType;
 
 import java.util.Map;
 
@@ -21,11 +21,11 @@ public class OnBeanCondition implements Condition {
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         try {
             BeanDefinitionRegistry registry = context.getRegistry();
-            Map<String, Object> attributes = metadata.getAnnotationAttributes(ConditionalOnMissingBean.class.getName());
+            Map<String, Object> attributes = metadata.getAnnotationAttributes(ConditionalOnMissingBeanType.class.getName());
             if (CollectionUtils.isEmpty(attributes)) {
                 return true;
             }
-            Class<?> clz = (Class<?>) attributes.get("value");
+            Class<?> clz = (Class<?>) attributes.get("type");
             for (String definitionName : registry.getBeanDefinitionNames()) {
                 BeanDefinition definition = registry.getBeanDefinition(definitionName);
                 String clzName = definition.getBeanClassName();

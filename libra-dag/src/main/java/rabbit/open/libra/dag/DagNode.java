@@ -9,7 +9,7 @@ import java.util.List;
  * @author xiaoqianbin
  * @date 2020/8/7
  **/
-@SuppressWarnings("serial")
+@SuppressWarnings({"serial", "unchecked"})
 public abstract class DagNode implements Serializable {
 
     /**
@@ -69,8 +69,8 @@ public abstract class DagNode implements Serializable {
         this.scheduleStatus = scheduleStatus;
     }
 
-    public DirectedAcyclicGraph<? extends DagNode> getGraph() {
-        return graph;
+	public <T extends DagNode, D extends DirectedAcyclicGraph<T>> D getGraph() {
+        return (D) graph;
     }
 
     public void setGraph(DirectedAcyclicGraph<? extends DagNode> graph) {

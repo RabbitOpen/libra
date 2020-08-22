@@ -204,7 +204,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
         if (!taskExecutionMetaMap.containsKey(taskId)) {
             synchronized (taskMap.get(taskMetaNodePath)) {
                 if (!taskExecutionMetaMap.containsKey(taskId)) {
-                    TaskExecutionContext meta = helper.readData(taskMetaNodePath);
+                    TaskExecutionContext meta = helper.readData(taskMetaNodePath + Constant.SP + taskId);
                     taskExecutionMetaMap.put(taskId, meta);
                 }
             }
@@ -360,7 +360,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
         String relativeTaskMetaNodePath = RegistryHelper.META_TASKS + Constant.SP + name;
         // 任务节点绝对路径
         String taskNodePath = helper.getNamespace() + relativeTaskMetaNodePath;
-        taskMap.put(taskNodePath, task);
+        taskMap.put(relativeTaskMetaNodePath, task);
         helper.subscribeDataChanges(relativeTaskMetaNodePath, new IZkDataListener() {
 
             @Override
