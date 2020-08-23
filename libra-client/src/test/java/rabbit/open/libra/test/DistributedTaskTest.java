@@ -38,12 +38,13 @@ import rabbit.open.libra.test.tasks.SimpleTask;
 public class DistributedTaskTest {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	
+
 	@Resource
 	MySchedulerTask mySchedulerTask;
 
 	@Resource
 	SchedulerTask schedulerTask;
+
 	
 	@Autowired
 	SimpleTask task;
