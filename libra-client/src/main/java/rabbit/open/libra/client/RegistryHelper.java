@@ -8,6 +8,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.exception.LibraException;
 
 import java.net.InetAddress;
@@ -379,7 +380,16 @@ public class RegistryHelper {
      * @date 2020/7/14
      **/
     public boolean deleteRecursive(String relativePath) {
-        return client.deleteRecursive(namespace + relativePath);
+        if (exists(relativePath)) {
+            List<String> children = client.getChildren(namespace + relativePath);
+            if (!CollectionUtils.isEmpty(children)) {
+                for (String child : children) {
+                    deleteRecursive(relativePath + Constant.SP + child);
+                }
+            }
+            client.delete(namespace + relativePath);
+        }
+        return true;
     }
 
     /**

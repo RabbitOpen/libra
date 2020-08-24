@@ -18,11 +18,23 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
      */
     private Date scheduleDate;
 
+    private boolean scheduled = false;
+
     /**
      * 实际调度时间
      */
     private Date fireDate;
-    
+
+    @Override
+    public void startSchedule() {
+        this.scheduled = true;
+        super.startSchedule();
+    }
+
+    public boolean isScheduled() {
+        return scheduled;
+    }
+
     public RuntimeDagInstance(DagTaskNode head, DagTaskNode tail, int maxNodeSize) {
         super(head, tail, maxNodeSize);
     }

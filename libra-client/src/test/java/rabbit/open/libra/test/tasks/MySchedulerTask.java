@@ -15,6 +15,8 @@ public class MySchedulerTask extends SchedulerTask {
 
     private Runnable updateCallback;
 
+    private Runnable scheduleFinished;
+
     @Override
     protected void loadDagMetas() {
         super.loadDagMetas();
@@ -38,5 +40,17 @@ public class MySchedulerTask extends SchedulerTask {
         if (null != updateCallback) {
             updateCallback.run();
         }
+    }
+
+    @Override
+    public void scheduleFinished(String dagId) {
+        super.scheduleFinished(dagId);
+        if (null != scheduleFinished) {
+            scheduleFinished.run();
+        }
+    }
+
+    public void setScheduleFinished(Runnable scheduleFinished) {
+        this.scheduleFinished = scheduleFinished;
     }
 }

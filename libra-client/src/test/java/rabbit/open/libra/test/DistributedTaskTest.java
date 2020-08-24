@@ -72,14 +72,14 @@ public class DistributedTaskTest {
 			s.release();
 		});
 		s.acquire();
-		TestCase.assertEquals("head", ((MyDagTaskNode) dagMetaMap.get(dagId).getHead()).getTaskName());
+		TestCase.assertEquals("head", dagMetaMap.get(dagId).getHead().getTaskName());
 		s.drainPermits();
 		head.setTaskName("newHead");
 		mySchedulerTask.updateDagInfo(dag, () -> {
 			s.release();
 		});
 		s.acquire();
-		TestCase.assertEquals(((MyDagTaskNode) dagMetaMap.get(dagId).getHead()).getTaskName(), "newHead");
+		TestCase.assertEquals(dagMetaMap.get(dagId).getHead().getTaskName(), "newHead");
 	}
 
 	/**
@@ -107,6 +107,9 @@ public class DistributedTaskTest {
 			logger.info("schedule date: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ctx.getScheduleDate()));
 			quit.release();
 		});
+		mySchedulerTask.setScheduleFinished(() -> {
+			quit.release();
+		});
 		DagTaskNode taskNode = new DagTaskNode(task.getTaskName(), 2, task.getSplitsCount(), task.getAppName());
 		header.addNextNode(taskNode);
 		taskNode.addNextNode(tail);
@@ -116,18 +119,22 @@ public class DistributedTaskTest {
 		graph.setCronExpression("0 * 1 * * *");
 		graph.setDagId(dagId);
 		mySchedulerTask.getRegistryHelper().deleteRecursive(RegistryHelper.GRAPHS + Constant.SP + graph.getDagId());
+		logger.info("**** delete dag {}", dagId);
 		Map<String, SchedulableDirectedAcyclicGraph> dagMetaMap = getObjectValue("dagMetaMap", mySchedulerTask,
 				SchedulerTask.class);
 		dagMetaMap.remove(graph.getDagId());
 		mySchedulerTask.createGraphNode(graph);
+		logger.info("**** create dag {}", dagId);
 		mySchedulerTask.scheduleGraph(graph);
+		logger.info("**** schedule dag {}", dagId);
 		try {
 			mySchedulerTask.scheduleGraph(graph);
 			throw new RuntimeException("不可能走到这里");
 		} catch (RepeatedScheduleException e) {
 			
 		}
-		quit.acquire();
+		quit.acquire(2);
 	}
+
 
 }

@@ -1,6 +1,7 @@
 package rabbit.open.libra.client.task;
 
 import org.I0Itec.zkclient.IZkDataListener;
+import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -178,22 +179,27 @@ public class TaskSubscriber extends ZookeeperMonitor {
         if (!meta.hasQuota()) {
             return;
         }
-        List<String> existedSplits = getScheduledPieces(helper.getChildren(taskIdPath));
-        if (existedSplits.size() != meta.getSplitsCount()) {
-            for (int i = 0; i < meta.getSplitsCount(); i++) {
-                if (existedSplits.contains(Integer.toString(i))) {
-                    continue;
-                }
-                if (meta.hasQuota() && meta.grabQuota()) {
-                    if (!try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
-                        meta.resume();
+        try {
+            List<String> existedSplits = getScheduledPieces(helper.getChildren(taskIdPath));
+            if (existedSplits.size() != meta.getSplitsCount()) {
+                for (int i = 0; i < meta.getSplitsCount(); i++) {
+                    if (existedSplits.contains(Integer.toString(i))) {
+                        continue;
                     }
-                } else {
-                    return;
+                    if (meta.hasQuota() && meta.grabQuota()) {
+                        if (!try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
+                            meta.resume();
+                        }
+                    } else {
+                        return;
+                    }
                 }
+            } else {
+                taskExecutionMetaMap.remove(taskId);
             }
-        } else {
-            taskExecutionMetaMap.remove(taskId);
+        } catch (ZkNoNodeException e) {
+            // to do: i don't care
+            logger.warn(e.getMessage());
         }
     }
 
@@ -239,7 +245,9 @@ public class TaskSubscriber extends ZookeeperMonitor {
                 } finally {
                     removeRunningNode(taskIdPath + "/R-" + index);
                 }
-                fetchNextTaskPiece(taskMetaNodePath, taskIdPath, meta);
+                if (!stopTaskLoading) {
+                    fetchNextTaskPiece(taskMetaNodePath, taskIdPath, meta);
+                }
             });
             return true;
         } else {

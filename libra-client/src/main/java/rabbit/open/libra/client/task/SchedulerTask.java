@@ -10,11 +10,10 @@ import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.Task;
 import rabbit.open.libra.client.ZookeeperMonitor;
 import rabbit.open.libra.client.anno.ConditionalOnMissingBeanType;
-import rabbit.open.libra.client.dag.DagTaskNode;
-import rabbit.open.libra.client.dag.RuntimeDagInstance;
-import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
+import rabbit.open.libra.client.dag.*;
 import rabbit.open.libra.client.exception.RepeatedScheduleException;
 import rabbit.open.libra.client.meta.TaskMeta;
+import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import javax.annotation.PostConstruct;
@@ -210,14 +209,17 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         }
         logger.info("begin to recover unfinished schedules");
         for (Map.Entry<String, RuntimeDagInstance> dagEntry : dagRuntimeMap.entrySet()) {
-        	// TODO: 如果已经运行完毕直接删除
             RuntimeDagInstance graph = dagEntry.getValue();
+            if (isScheduledInstance(graph)) {
+                scheduleFinished(graph.getDagId());
+                continue;
+            }
             graph.injectTask(this);
             graph.injectNodeGraph();
             graph.setTask(this);
             Set<DagTaskNode> runningNodes = graph.getRunningNodes();
             if (runningNodes.isEmpty()) {
-            	graph.startSchedule();
+            	startSchedule(graph);
             } else {
             	for (DagTaskNode runningNode : runningNodes) {
                     runningNode.setGraph(graph);
@@ -226,6 +228,31 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
             }
         }
         logger.info("all unfinished schedules are recovered");
+    }
+
+    /**
+     * 开始调度一个有向无环图
+     * @param	graph
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+    protected void startSchedule(RuntimeDagInstance graph) {
+        graph.startSchedule();
+    }
+
+    /**
+     * 已经调度完成的节点
+     * @param	graph
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+    private boolean isScheduledInstance(RuntimeDagInstance graph) {
+        for (DagTaskNode node : graph.getNodes()) {
+            if (node.getScheduleStatus() != ScheduleStatus.FINISHED) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -258,7 +285,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
     }
     
     /***
-     * <b>@description 调度 dag </b>
+     * <b>@description 外部调度 dag </b>
      * @param graph
      */
     public void scheduleGraph(RuntimeDagInstance graph) {
@@ -284,6 +311,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         if (childChangedListenerMap.containsKey(RegistryHelper.GRAPHS)) {
             return;
         }
+        logger.info("add dag reload listener.......");
         IZkChildListener listener = (path, list) -> onDagListChanged(list);
         childChangedListenerMap.put(RegistryHelper.GRAPHS, listener);
         helper.subscribeChildChanges(RegistryHelper.GRAPHS, listener);
@@ -321,14 +349,16 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @date    2020/8/18
      **/
     protected void onDagListChanged(List<String> list) {
+        logger.info("onDagListChanged: {}", list);
         for (String dagId : list) {
             if (!dagMetaMap.containsKey(dagId)) {
-            	logger.info("dag[{}] is found", dagId);
+            	logger.info("new dag[{}] is found", dagId);
                 processMetaInfoByDagId(dagId);
             }
         }
         for (String id : dagMetaMap.keySet()) {
             if (!list.contains(id)) {
+                logger.info("dag[{}] is removed", id);
                 dagMetaMap.remove(id);
                 String relativePath = RegistryHelper.GRAPHS + SP + id;
                 IZkDataListener dataListener = dataChangedListenerMap.remove(relativePath);
@@ -383,19 +413,23 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @param children
      */
 	protected void onDagScheduled(String relativePath, String path, List<String> children) {
-		if (null == children) {
+		if (null == children || children.isEmpty()) {
 			return;
 		}
 		if (children.size() > 1) {
 			logger.error("more than 1 dag instance are found under node [%]", path);
 		} else {
-			RuntimeDagInstance rdi = helper.readData(relativePath);
+			RuntimeDagInstance rdi = helper.readData(relativePath + SP + children.get(0));
+            if (rdi.isScheduled()) {
+                return;
+            }
+            logger.info("onDagScheduled: {}", children);
 			dagRuntimeMap.put(rdi.getDagId(), rdi);
 			rdi.injectTask(this);
 			rdi.injectNodeGraph();
 			rdi.setTask(this);
-			rdi.startSchedule();
-			logger.info("dag[{} - {}] is scheduled at ", rdi.getDagId(), rdi.getScheduleId(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rdi.getFireDate()));
+            startSchedule(rdi);
+			logger.info("dag[{} - {}] is scheduled at {}", rdi.getDagId(), rdi.getScheduleId(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rdi.getFireDate()));
 		}
 	}
 
@@ -406,6 +440,27 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      **/
     private IZkDataListener getDagDataChangeListener() {
         return dagDataChangedListenerSupplier.get();
+    }
+
+    /**
+     * dag 调度结束
+     * @param	dagId
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+    public void scheduleFinished(String dagId) {
+        RuntimeDagInstance dagInstance = dagRuntimeMap.remove(dagId);
+        Set<DagTaskNode> nodes = dagInstance.getNodes();
+        for (DagTaskNode node : nodes) {
+            if (node instanceof DagHeader || node instanceof DagTail) {
+                continue;
+            }
+            String relativePath = RegistryHelper.META_TASKS + SP + node.getAppName()
+                    + SP + node.getTaskName() + SP + node.getTaskId();
+            logger.info("delete task node [{}]", relativePath);
+            helper.deleteRecursive(relativePath);
+        }
+        helper.delete(RegistryHelper.GRAPHS + SP + dagId + SP + dagInstance.getScheduleId());
     }
 
     /**

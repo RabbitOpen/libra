@@ -3,8 +3,6 @@ package rabbit.open.libra.client.dag;
 import org.I0Itec.zkclient.exception.ZkBadVersionException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.meta.TaskExecutionContext;
 import rabbit.open.libra.client.task.SchedulerTask;
@@ -25,8 +23,6 @@ import static rabbit.open.libra.client.Constant.SP;
  **/
 @SuppressWarnings("serial")
 public class DagTaskNode extends DagNode {
-
-    protected transient Logger logger = LoggerFactory.getLogger(getClass());
 
     protected transient SchedulerTask task;
 
@@ -49,6 +45,11 @@ public class DagTaskNode extends DagNode {
      * app name
      */
     protected String appName;
+
+    /**
+     * taskId
+     **/
+    protected String taskId;
     
     /**
      * 运行上下文
@@ -95,7 +96,7 @@ public class DagTaskNode extends DagNode {
         }
         task.monitorTaskExecution(taskInstanceRelativePath, (path, children) -> {
         	if (isTaskFinished(children)) {
-        		task.unsubscribeTaskExecution(path.substring(RegistryHelper.META_TASKS.length()));
+        		task.unsubscribeTaskExecution(path.substring(task.getRegistryHelper().getNamespace().length()));
         		getGraph().onDagNodeExecuted(this);
         		return;
         	}
@@ -126,7 +127,8 @@ public class DagTaskNode extends DagNode {
 		RuntimeDagInstance graph = getGraph();
     	context = new TaskExecutionContext(parallel);
     	context.setAppName(appName);
-    	context.setTaskId(UUID.randomUUID().toString().replaceAll("-", ""));
+		taskId = UUID.randomUUID().toString().replaceAll("-", "");
+		context.setTaskId(taskId);
     	context.setSplitsCount(splitsCount);
     	context.setScheduleDate(graph.getScheduleDate());
     	context.setFireDate(graph.getFireDate());
@@ -165,5 +167,13 @@ public class DagTaskNode extends DagNode {
 	
 	public void setTask(SchedulerTask task) {
 		this.task = task;
+	}
+
+	public String getTaskId() {
+		return taskId;
+	}
+
+	public String getAppName() {
+		return appName;
 	}
 }
