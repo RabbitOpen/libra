@@ -161,7 +161,12 @@ public class TaskSubscriber extends ZookeeperMonitor {
                 continue;
             }
             for (String taskId : tasks) {
-                loadTaskById(taskMetaNodePath, taskId);
+                try {
+                    loadTaskById(taskMetaNodePath, taskId);
+                } catch (ZkNoNodeException e) {
+                    // to do: i don't care
+                    logger.warn(e.getMessage());
+                }
             }
         }
     }
@@ -179,27 +184,35 @@ public class TaskSubscriber extends ZookeeperMonitor {
         if (!meta.hasQuota()) {
             return;
         }
-        try {
-            List<String> existedSplits = getScheduledPieces(helper.getChildren(taskIdPath));
-            if (existedSplits.size() != meta.getSplitsCount()) {
-                for (int i = 0; i < meta.getSplitsCount(); i++) {
-                    if (existedSplits.contains(Integer.toString(i))) {
-                        continue;
-                    }
-                    if (meta.hasQuota() && meta.grabQuota()) {
-                        if (!try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
-                            meta.resume();
-                        }
-                    } else {
-                        return;
-                    }
+        List<String> existedSplits = getScheduledPieces(helper.getChildren(taskIdPath));
+        if (existedSplits.size() != meta.getSplitsCount()) {
+            try2GrabTaskPiece(taskMetaNodePath, taskIdPath, meta, existedSplits);
+        } else {
+            taskExecutionMetaMap.remove(taskId);
+        }
+    }
+
+    /**
+     * 尝试抢占一个任务片
+     * @param	taskMetaNodePath
+	 * @param	taskIdPath
+	 * @param	meta
+	 * @param	existedSplits
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+    private void try2GrabTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionContext meta, List<String> existedSplits) {
+        for (int i = 0; i < meta.getSplitsCount(); i++) {
+            if (existedSplits.contains(Integer.toString(i))) {
+                continue;
+            }
+            if (meta.hasQuota() && meta.grabQuota()) {
+                if (!try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
+                    meta.resume();
                 }
             } else {
-                taskExecutionMetaMap.remove(taskId);
+                return;
             }
-        } catch (ZkNoNodeException e) {
-            // to do: i don't care
-            logger.warn(e.getMessage());
         }
     }
 

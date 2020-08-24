@@ -31,7 +31,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
     /**
      * 所有节点
      **/
-    protected Set<T> nodes = new HashSet<>();
+    private Set<T> nodes = new HashSet<>();
 
 	/**
 	 * 正在调度的节点
@@ -236,7 +236,4 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 		return head;
 	}
 
-	public T getTail() {
-		return tail;
-	}
 }

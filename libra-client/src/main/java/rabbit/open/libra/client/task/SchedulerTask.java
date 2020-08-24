@@ -427,7 +427,8 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
 			rdi.injectNodeGraph();
 			rdi.setTask(this);
             startSchedule(rdi);
-			logger.info("dag[{} - {}] is scheduled at {}", rdi.getDagId(), rdi.getScheduleId(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rdi.getFireDate()));
+            String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rdi.getFireDate());
+            logger.info("dag[{} - {}] is scheduled at {}", rdi.getDagId(), rdi.getScheduleId(), fireDate);
 		}
 	}
 

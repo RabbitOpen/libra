@@ -1,7 +1,5 @@
 package rabbit.open.libra.client.dag;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.dag.DirectedAcyclicGraph;
 
@@ -14,8 +12,6 @@ import java.util.Date;
  **/
 @SuppressWarnings("serial")
 public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> {
-
-    protected Logger logger = LoggerFactory.getLogger(getClass());
 
     // dag name
     private String dagName;
@@ -44,7 +40,7 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
 	 * @param task
 	 */
 	public void injectTask(SchedulerTask task) {
-		for (DagTaskNode node : nodes) {
+		for (DagTaskNode node : getNodes()) {
 			node.setTask(task);
 			node.setGraph(this);
 		}
@@ -54,7 +50,7 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
 	 * <b>@description 注入dag </b>
 	 */
 	public void injectNodeGraph() {
-		for (DagTaskNode node : nodes) {
+		for (DagTaskNode node : getNodes()) {
 			node.setGraph(this);
 		}
 	}
@@ -66,7 +62,6 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
      **/
     @Override
     protected void onScheduleFinished() {
-        logger.info("dag is scheduled");
         task.scheduleFinished(getDagId());
     }
 
