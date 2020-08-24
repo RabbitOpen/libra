@@ -1,5 +1,7 @@
 package rabbit.open.libra.client.dag;
 
+import org.springframework.scheduling.TriggerContext;
+import org.springframework.scheduling.support.CronTrigger;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.dag.DirectedAcyclicGraph;
 
@@ -12,6 +14,8 @@ import java.util.Date;
  **/
 @SuppressWarnings("serial")
 public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> {
+
+    private static final long serialVersionUID = 1L;
 
     // dag name
     private String dagName;
@@ -54,6 +58,32 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
 			node.setGraph(this);
 		}
 	}
+
+    /**
+     * <b>@description 获取任务下次执行时间 </b>
+     * @return
+     */
+    public Date getNextScheduleTime() {
+        CronTrigger trigger = new CronTrigger(cronExpression);
+        return trigger.nextExecutionTime(new TriggerContext() {
+
+            @Override
+            public Date lastScheduledExecutionTime() {
+                return null;
+            }
+
+            @Override
+            public Date lastActualExecutionTime() {
+                return null;
+            }
+
+            @Override
+            public Date lastCompletionTime() {
+                return lastFireDate;
+            }
+        });
+    }
+
 
     /**
      * 调度完成

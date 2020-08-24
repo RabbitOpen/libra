@@ -1,11 +1,8 @@
 package rabbit.open.libra.client.meta;
 
-import org.springframework.scheduling.TriggerContext;
-import org.springframework.scheduling.support.CronTrigger;
 import rabbit.open.libra.client.Task;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * task meta 信息
@@ -39,33 +36,6 @@ public class TaskMeta implements Serializable {
         setSplitsCount(task.getSplitsCount());
         setParallel(task.getConcurrenceCount());
         setTaskName(task.getTaskName());
-    }
-    
-    /**
-     * <b>@description 获取任务下次执行时间 </b>
-     * @param lastCompletionTime
-     * @param cronExpression
-     * @return
-     */
-    public static Date getNextScheduleTime(Date lastCompletionTime, String cronExpression) {
-    	CronTrigger trigger = new CronTrigger(cronExpression);
-        return trigger.nextExecutionTime(new TriggerContext() {
-
-            @Override
-            public Date lastScheduledExecutionTime() {
-                return null;
-            }
-
-            @Override
-            public Date lastActualExecutionTime() {
-                return null;
-            }
-
-            @Override
-            public Date lastCompletionTime() {
-                return lastCompletionTime;
-            }
-        });
     }
 
     public int getSplitsCount() {

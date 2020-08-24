@@ -13,6 +13,8 @@ import java.util.Map;
 @SuppressWarnings("serial")
 public class ScheduleContext implements Serializable {
 
+    public static final long serialVersionUID = 1L;
+
     private Map<String, Serializable> context = new HashMap<>();
 
     /**

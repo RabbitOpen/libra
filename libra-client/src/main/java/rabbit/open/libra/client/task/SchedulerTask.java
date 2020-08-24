@@ -186,15 +186,36 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @date    2020/8/18
      **/
     protected void doSchedule() throws InterruptedException {
-        addDagReloadListener();
+        addDagChangedListener();
         loadDagMetas();
         loadRuntimeMetas();
         doRunningDagRecovering();
+        doInnerSchedule();
+    }
+
+    /**
+     * 内部循环调度
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+    private void doInnerSchedule() throws InterruptedException {
         while (true) {
-        	if (!leader || quitSemaphore.tryAcquire(3, TimeUnit.SECONDS)) {
+        	if (!leader || quitSemaphore.tryAcquire(200, TimeUnit.MILLISECONDS)) {
         		break;
         	}
-        	// TODO 正常调度
+            for (Map.Entry<String, SchedulableDirectedAcyclicGraph> graphEntry : dagMetaMap.entrySet()) {
+                if (dagRuntimeMap.containsKey(graphEntry.getKey())) {
+                    continue;
+                }
+                // 不能直接从dagMetaMap中读取使用（dagMetaMap中的对象是单例的，会被调度任务污染）
+                SchedulableDirectedAcyclicGraph graph = helper.readData(RegistryHelper.GRAPHS + SP + graphEntry.getKey());
+                Date nextScheduleTime = graph.getNextScheduleTime();
+                if (nextScheduleTime.before(new Date())) {
+                    scheduleGraph(new RuntimeDagInstance(graph));
+                    graph.setLastFireDate(nextScheduleTime);
+                    updateDagInfo(graph);
+                }
+            }
         }
     }
 
@@ -303,11 +324,11 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
     }
 
     /**
-     * 监听dag变化(dag 变化时重新加载meta信息)
+     * 监听dag节点、数据信息变化(变化时重新加载meta信息)
      * @author  xiaoqianbin
      * @date    2020/8/18
      **/
-    protected void addDagReloadListener() {
+    protected void addDagChangedListener() {
         if (childChangedListenerMap.containsKey(RegistryHelper.GRAPHS)) {
             return;
         }

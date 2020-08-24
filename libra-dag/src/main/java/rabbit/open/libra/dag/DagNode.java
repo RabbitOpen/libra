@@ -12,6 +12,8 @@ import java.util.List;
 @SuppressWarnings({"serial", "unchecked"})
 public abstract class DagNode implements Serializable {
 
+    public static final long serialVersionUID = 1L;
+
     /**
      * 下一批节点
      **/

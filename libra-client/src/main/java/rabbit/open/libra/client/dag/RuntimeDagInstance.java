@@ -1,6 +1,13 @@
 package rabbit.open.libra.client.dag;
 
+import rabbit.open.libra.client.exception.LibraException;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * dag运行态实例
@@ -9,6 +16,8 @@ import java.util.Date;
  **/
 @SuppressWarnings("serial")
 public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
+
+    private static final long serialVersionUID = 1L;
 
     // 调度id
     private String scheduleId;
@@ -33,6 +42,36 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
 
     public boolean isScheduled() {
         return scheduled;
+    }
+
+    public RuntimeDagInstance(SchedulableDirectedAcyclicGraph graph) {
+        super(graph.getHead(), graph.getTail(), graph.getMaxNodeSize());
+        // COPY
+        List<Field> fields = getFields(SchedulableDirectedAcyclicGraph.class);
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+            try {
+                field.set(this, field.get(graph));
+            } catch (Exception e) {
+                throw new LibraException(e.getMessage());
+            }
+        }
+    }
+
+    private <D> List<Field> getFields(Class<D> clz) {
+        List<Field> fields = new ArrayList<>();
+        Class<?> sup = clz;
+        while (true) {
+            fields.addAll(Arrays.asList(clz.getDeclaredFields()));
+            if (Object.class.equals(sup.getSuperclass())) {
+                break;
+            }
+            sup = sup.getSuperclass();
+        }
+        return fields;
     }
 
     public RuntimeDagInstance(DagTaskNode head, DagTaskNode tail, int maxNodeSize) {

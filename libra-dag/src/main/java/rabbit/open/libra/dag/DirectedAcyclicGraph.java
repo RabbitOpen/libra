@@ -15,8 +15,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author xiaoqianbin
  * @date 2020/8/7
  **/
-@SuppressWarnings({"serial", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public abstract class DirectedAcyclicGraph<T extends DagNode> implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 	图的头
@@ -43,6 +45,8 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 	 **/
     private ReentrantLock runningNodesQueueLock = new ReentrantLock();
 
+    private int maxNodeSize;
+
     /**
 	 * 	图包含的路径
 	 */
@@ -53,7 +57,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
     }
 
     /**
-     *
+     * constructor
      * @param	head
 	 * @param	tail
 	 * @param	maxNodeSize 	图中最大节点个数
@@ -66,6 +70,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 		if (head.getNextNodes().isEmpty()) {
 			throw new NoPathException();
 		}
+		this.maxNodeSize = maxNodeSize;
 		runningNodes = new HashSet<>(maxNodeSize);
 		doCycleChecking();
 		loadNodes(this.head);
@@ -236,4 +241,11 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
 		return head;
 	}
 
+	public T getTail() {
+		return tail;
+	}
+
+	public int getMaxNodeSize() {
+		return maxNodeSize;
+	}
 }
