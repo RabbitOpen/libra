@@ -150,7 +150,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
         if (!zkPrepared) {
             return;
         }
-        while (true) {
+        while (!stopTaskLoading) {
             String taskMetaNodePath = getPath2Scan();
             if (null == taskMetaNodePath) {
                 return;
@@ -179,17 +179,21 @@ public class TaskSubscriber extends ZookeeperMonitor {
             return;
         }
         List<String> existedSplits = getScheduledPieces(helper.getChildren(taskIdPath));
-        for (int i = 0; i < meta.getSplitsCount(); i++) {
-            if (existedSplits.contains(Integer.toString(i))) {
-                continue;
-            }
-            if (meta.hasQuota() && meta.grabQuota()) {
-                if (!try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
-                    meta.resume();
+        if (existedSplits.size() != meta.getSplitsCount()) {
+            for (int i = 0; i < meta.getSplitsCount(); i++) {
+                if (existedSplits.contains(Integer.toString(i))) {
+                    continue;
                 }
-            } else {
-                return;
+                if (meta.hasQuota() && meta.grabQuota()) {
+                    if (!try2SubmitTaskPiece(taskMetaNodePath, taskIdPath, meta, i)) {
+                        meta.resume();
+                    }
+                } else {
+                    return;
+                }
             }
+        } else {
+            taskExecutionMetaMap.remove(taskId);
         }
     }
 
@@ -365,6 +369,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
             @Override
             public void handleDataChange(String path, Object data) {
+                logger.info("new task[{}] is published", path);
                 addScanPath(path.substring(helper.getNamespace().length()));
             }
 
@@ -411,12 +416,13 @@ public class TaskSubscriber extends ZookeeperMonitor {
     }
 
     @PreDestroy
-    public void destroy() {
+    public void destroy() throws InterruptedException {
         logger.info("task monitor is closing");
         stopTaskLoading = true;
         loaderBlockSemaphore.release(10);
         taskLoader.shutdown();
         taskRunner.shutdown();
+        taskRunner.awaitTermination(10, TimeUnit.SECONDS);
         getRegistryHelper().destroy();
         logger.info("task monitor is closed");
     }

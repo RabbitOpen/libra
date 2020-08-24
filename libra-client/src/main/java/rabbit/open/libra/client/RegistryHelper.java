@@ -5,9 +5,9 @@ import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rabbit.open.libra.client.dag.VersionedData;
 import rabbit.open.libra.client.exception.LibraException;
 
 import java.net.InetAddress;
@@ -311,6 +311,17 @@ public class RegistryHelper {
     }
 
     /**
+     * 读数据
+     * @param relativePath
+     * @param stat
+     * @author xiaoqianbin
+     * @date 2020/7/16
+     **/
+    public <T> T readData(String relativePath, Stat stat) {
+        return client.readData(namespace + relativePath, stat);
+    }
+
+    /**
      * 写数据
      * @param	relativePath
 	 * @param	data
@@ -325,11 +336,12 @@ public class RegistryHelper {
      * 更新数据
      * @param	relativePath
 	 * @param	data
+	 * @param	expectedVersion
      * @author  xiaoqianbin
      * @date    2020/8/20
      **/
-    public void updateData(String relativePath, VersionedData data) {
-        client.writeData(namespace + relativePath, data, data.getVersion());
+    public void writeData(String relativePath, Object data, int expectedVersion) {
+        client.writeData(namespace + relativePath, data, expectedVersion);
     }
 
     /**

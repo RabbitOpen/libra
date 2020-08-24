@@ -1,21 +1,22 @@
 package rabbit.open.libra.client.dag;
 
-import static rabbit.open.libra.client.Constant.SP;
+import org.I0Itec.zkclient.exception.ZkBadVersionException;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rabbit.open.libra.client.RegistryHelper;
+import rabbit.open.libra.client.meta.TaskExecutionContext;
+import rabbit.open.libra.client.task.SchedulerTask;
+import rabbit.open.libra.dag.DagNode;
+import rabbit.open.libra.dag.ScheduleStatus;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.zookeeper.CreateMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import rabbit.open.libra.client.RegistryHelper;
-import rabbit.open.libra.client.meta.TaskExecutionContext;
-import rabbit.open.libra.client.task.SchedulerTask;
-import rabbit.open.libra.dag.DagNode;
-import rabbit.open.libra.dag.ScheduleStatus;
+import static rabbit.open.libra.client.Constant.SP;
 
 /**
  * dag任务节点
@@ -80,10 +81,12 @@ public class DagTaskNode extends DagNode {
     @Override
     protected void doSchedule() {
     	generateTaskExecutionContext();
-        String taskInstanceRelativePath = RegistryHelper.META_TASKS + SP + context.getAppName() + SP + context.getTaskName() + SP + context.getTaskId();
+		String taskMetaPath = RegistryHelper.META_TASKS + SP + context.getAppName() + SP + context.getTaskName();
+		String taskInstanceRelativePath = taskMetaPath + SP + context.getTaskId();
         if (!task.getRegistryHelper().exists(taskInstanceRelativePath)) {
             task.getRegistryHelper().create(taskInstanceRelativePath, context, CreateMode.PERSISTENT);
-        } else {
+			notifyChildrenChanged(taskMetaPath);
+		} else {
         	List<String> children = task.getRegistryHelper().getChildren(taskInstanceRelativePath);
         	if (isTaskFinished(children)) {
         		getGraph().onDagNodeExecuted(this);
@@ -98,6 +101,23 @@ public class DagTaskNode extends DagNode {
         	}
         });
     }
+
+    /**
+     * 通过重写meta信息通知子节点变更了
+     * @param	taskMetaPath
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+	private void notifyChildrenChanged(String taskMetaPath) {
+		try {
+			Stat stat = new Stat();
+			RegistryHelper helper = task.getRegistryHelper();
+			Object data = helper.readData(taskMetaPath, stat);
+			helper.writeData(taskMetaPath, data, stat.getVersion());
+		} catch (ZkBadVersionException e) {
+			notifyChildrenChanged(taskMetaPath);
+		}
+	}
 
 	/**
 	 * <b>@description 生成task运行context信息 </b>

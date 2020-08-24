@@ -1,13 +1,6 @@
 package rabbit.open.libra.test;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.text.SimpleDateFormat;
-import java.util.Map;
-import java.util.concurrent.Semaphore;
-
-import javax.annotation.Resource;
-
+import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -15,19 +8,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import junit.framework.TestCase;
 import rabbit.open.libra.client.Constant;
 import rabbit.open.libra.client.RegistryHelper;
-import rabbit.open.libra.client.dag.DagHeader;
-import rabbit.open.libra.client.dag.DagTail;
-import rabbit.open.libra.client.dag.DagTaskNode;
-import rabbit.open.libra.client.dag.RuntimeDagInstance;
-import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
+import rabbit.open.libra.client.dag.*;
 import rabbit.open.libra.client.exception.RepeatedScheduleException;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.test.tasks.MySchedulerTask;
 import rabbit.open.libra.test.tasks.SimpleTask;
+
+import javax.annotation.Resource;
+import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 /**
  * @author xiaoqianbin
@@ -45,7 +38,6 @@ public class DistributedTaskTest {
 	@Resource
 	SchedulerTask schedulerTask;
 
-	
 	@Autowired
 	SimpleTask task;
 
@@ -107,12 +99,12 @@ public class DistributedTaskTest {
 	}
 
 	@Test
-	public void scheduleTest() throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+	public void scheduleTest() throws InterruptedException, NoSuchFieldException, IllegalAccessException {
 		DagHeader header = new DagHeader();
 		DagTail tail = new DagTail();
 		Semaphore quit = new Semaphore(0);
 		task.setTask(ctx -> {
-			logger.info("schedule date: {}", new SimpleDateFormat("yyyy-MM-dd").format(ctx.getScheduleDate()));
+			logger.info("schedule date: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ctx.getScheduleDate()));
 			quit.release();
 		});
 		DagTaskNode taskNode = new DagTaskNode(task.getTaskName(), 2, task.getSplitsCount(), task.getAppName());
@@ -137,4 +129,5 @@ public class DistributedTaskTest {
 		}
 		quit.acquire();
 	}
+
 }

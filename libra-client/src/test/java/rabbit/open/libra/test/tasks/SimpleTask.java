@@ -1,10 +1,10 @@
 package rabbit.open.libra.test.tasks;
 
-import java.util.function.Consumer;
-
 import org.springframework.stereotype.Component;
 import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
+
+import java.util.function.Consumer;
 
 /**
  * @author xiaoqianbin

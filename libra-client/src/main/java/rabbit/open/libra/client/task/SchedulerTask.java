@@ -1,29 +1,10 @@
 package rabbit.open.libra.client.task;
 
-import static rabbit.open.libra.client.Constant.SP;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
-
 import rabbit.open.libra.client.RegistryConfig;
 import rabbit.open.libra.client.RegistryHelper;
 import rabbit.open.libra.client.Task;
@@ -35,6 +16,19 @@ import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.exception.RepeatedScheduleException;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import static rabbit.open.libra.client.Constant.SP;
 
 /**
  * 调度任务
@@ -170,11 +164,11 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         schedulerThread = new Thread(() -> {
             while (true) {
                 try {
-                    if (quitSemaphore.tryAcquire(3, TimeUnit.SECONDS)) {
-                        break;
-                    }
                     if (leader) {
                         doSchedule();
+                    }
+                    if (quitSemaphore.tryAcquire(3, TimeUnit.SECONDS)) {
+                        break;
                     }
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);

@@ -11,7 +11,7 @@ import java.util.Date;
  * @date 2020/8/18
  **/
 @SuppressWarnings("serial")
-public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> implements VersionedData {
+public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> {
 
     // dag name
     private String dagName;
@@ -26,11 +26,6 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
     private Date lastFireDate;
 
     private transient SchedulerTask task;
-
-    /**
-     * 数据版本号
-     **/
-    private int version = 0;
 
     public SchedulableDirectedAcyclicGraph(DagTaskNode head, DagTaskNode tail) {
         super(head, tail);
@@ -111,12 +106,4 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
         this.lastFireDate = lastFireDate;
     }
 
-    @Override
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
 }
