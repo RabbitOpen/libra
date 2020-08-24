@@ -107,8 +107,10 @@ public class DistributedTaskTest {
 			logger.info("schedule date: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ctx.getScheduleDate()));
 			quit.release();
 		});
-		mySchedulerTask.setScheduleFinished(() -> {
-			quit.release();
+		mySchedulerTask.setScheduleFinished( dagId -> {
+			if (dagId.equals("schedule-test-graph")) {
+				quit.release();
+			}
 		});
 		DagTaskNode taskNode = new DagTaskNode(task.getTaskName(), 2, task.getSplitsCount(), task.getAppName());
 		header.addNextNode(taskNode);

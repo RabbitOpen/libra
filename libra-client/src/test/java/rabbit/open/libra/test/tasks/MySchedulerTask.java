@@ -4,6 +4,8 @@ import org.springframework.stereotype.Component;
 import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.task.SchedulerTask;
 
+import java.util.function.Consumer;
+
 /**
  * @author xiaoqianbin
  * @date 2020/8/19
@@ -15,7 +17,7 @@ public class MySchedulerTask extends SchedulerTask {
 
     private Runnable updateCallback;
 
-    private Runnable scheduleFinished;
+    private Consumer<String> scheduleFinished;
 
     @Override
     protected void loadDagMetas() {
@@ -46,11 +48,11 @@ public class MySchedulerTask extends SchedulerTask {
     public void scheduleFinished(String dagId) {
         super.scheduleFinished(dagId);
         if (null != scheduleFinished) {
-            scheduleFinished.run();
+            scheduleFinished.accept(dagId);
         }
     }
 
-    public void setScheduleFinished(Runnable scheduleFinished) {
+    public void setScheduleFinished(Consumer<String> scheduleFinished) {
         this.scheduleFinished = scheduleFinished;
     }
 }
