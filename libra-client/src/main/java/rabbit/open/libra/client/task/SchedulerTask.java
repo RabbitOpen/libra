@@ -375,10 +375,8 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @date    2020/8/20
      **/
     public void saveRuntimeGraph(SchedulableDirectedAcyclicGraph dag) {
-        synchronized (dag) {
-        	RuntimeDagInstance rdi = (RuntimeDagInstance) dag;
-            helper.writeData(RegistryHelper.GRAPHS + SP + dag.getDagId() + SP + rdi.getScheduleId(), dag);
-		}
+        RuntimeDagInstance rdi = (RuntimeDagInstance) dag;
+        helper.writeData(RegistryHelper.GRAPHS + SP + dag.getDagId() + SP + rdi.getScheduleId(), dag);
     }
 
     /**
