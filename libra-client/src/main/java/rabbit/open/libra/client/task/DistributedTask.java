@@ -30,4 +30,11 @@ public abstract class DistributedTask implements Task {
     public void execute(ScheduleContext context) {
 
     }
+
+    /**
+     * 中断任务
+     * @author  xiaoqianbin
+     * @date    2020/8/24
+     **/
+    public void interrupt() {}
 }

@@ -442,6 +442,7 @@ public class TaskSubscriber extends ZookeeperMonitor {
         stopTaskLoading = true;
         loaderBlockSemaphore.release(10);
         taskLoader.shutdown();
+        taskMap.values().forEach(DistributedTask::interrupt);
         taskRunner.shutdown();
         taskRunner.awaitTermination(10, TimeUnit.SECONDS);
         getRegistryHelper().destroy();
