@@ -22,9 +22,6 @@ public class OnBeanCondition implements Condition {
         try {
             BeanDefinitionRegistry registry = context.getRegistry();
             Map<String, Object> attributes = metadata.getAnnotationAttributes(ConditionalOnMissingBeanType.class.getName());
-            if (CollectionUtils.isEmpty(attributes)) {
-                return true;
-            }
             Class<?> clz = (Class<?>) attributes.get("type");
             for (String definitionName : registry.getBeanDefinitionNames()) {
                 BeanDefinition definition = registry.getBeanDefinition(definitionName);
