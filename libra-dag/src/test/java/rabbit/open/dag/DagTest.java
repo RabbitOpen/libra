@@ -4,10 +4,13 @@ import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rabbit.open.libra.dag.DagNode;
 import rabbit.open.libra.dag.DirectedAcyclicGraph;
 import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.exception.CyclicDagException;
+import rabbit.open.libra.dag.exception.DagException;
 import rabbit.open.libra.dag.exception.NoPathException;
 
 import java.util.List;
@@ -21,6 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @RunWith(JUnit4.class)
 @SuppressWarnings("serial")
 public class DagTest {
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * <b>@description 简单路径扫描测试 </b>
@@ -40,8 +45,78 @@ public class DagTest {
         TestCase.assertEquals(3, paths.size());
         for (int i = 0; i < paths.size(); i++) {
             TestCase.assertEquals(String.format("[start, branch%d, task1, end]", i + 1), paths.get(i).toString());
-            System.out.println(paths.get(i));
+            logger.info("{}", paths.get(i));
         }
+    }
+
+    @Test
+    public void pathCheckingTest() {
+        MyScheduleDagNode start = new MyScheduleDagNode("start");
+        start.addNextNode(new MyScheduleDagNode("branch01"));
+        start.addNextNode(new MyScheduleDagNode("branch02"));
+        MyScheduleDagNode end = new MyScheduleDagNode("end");
+        MyScheduleDagNode task1 = new MyScheduleDagNode("task1");
+        task1.addNextNode(end);
+        start.getNextNodes().forEach(n -> n.addNextNode(task1));
+        MyScheduleDagNode branch03 = new MyScheduleDagNode("branch03");
+        start.addNextNode(branch03);
+        branch03.addNextNode(new MyScheduleDagNode("branch031"));
+        branch03.addNextNode(new MyScheduleDagNode("branch032"));
+        try {
+            new MyDag(start, end);
+            throw new RuntimeException("");
+        } catch (DagException e) {
+            logger.info(e.getMessage());
+        }
+    }
+
+    /**
+     * 重新调度测试
+     * @author xiaoqianbin
+     * @date 2020/8/25
+     **/
+    @Test
+    public void reStartScheduleTest() throws InterruptedException {
+        MyScheduleDagNode start = new MyScheduleDagNode("start");
+        AtomicLong counter = new AtomicLong(0);
+        MyScheduleDagNode branch01 = new MyScheduleDagNode("branch01") {
+            @Override
+            public void doSchedule() {
+                counter.getAndAdd(3L);
+                super.doSchedule();
+            }
+        };
+        start.addNextNode(branch01);
+        MyScheduleDagNode branch02 = new MyScheduleDagNode("branch02") {
+            @Override
+            public void doSchedule() {
+                counter.getAndAdd(3L);
+                super.doSchedule();
+            }
+        };
+        start.addNextNode(branch02);
+        MyScheduleDagNode end = new MyScheduleDagNode("end");
+        MyScheduleDagNode task1 = new MyScheduleDagNode("task1") {
+            @Override
+            public void doSchedule() {
+                counter.getAndAdd(1L);
+                super.doSchedule();
+            }
+        };
+        task1.addNextNode(end);
+        start.getNextNodes().forEach(n -> n.addNextNode(task1));
+        Semaphore s = new Semaphore(0);
+        MyDag myDag = new MyDag(start, end) {
+            @Override
+            protected void onScheduleFinished() {
+                s.release();
+            }
+        };
+        myDag.getRunningNodes().add(branch02);
+        myDag.getRunningNodes().add(branch01);
+        myDag.startSchedule();
+        s.acquire();
+        TestCase.assertEquals(1 + 3 + 3, counter.get());
     }
 
     /**
@@ -114,7 +189,7 @@ public class DagTest {
         List<List<MyScheduleDagNode>> paths = graph.getPaths();
         TestCase.assertEquals(2, paths.size());
         for (int i = 0; i < paths.size(); i++) {
-            System.out.println(paths.get(i));
+            logger.info("{}", paths.get(i));
         }
         TestCase.assertEquals("[start, task1, task2, task3, end]", paths.get(0).toString());
         TestCase.assertEquals("[start, task1, task4, end]", paths.get(1).toString());

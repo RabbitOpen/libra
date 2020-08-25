@@ -1,6 +1,7 @@
 package rabbit.open.libra.dag;
 
 import rabbit.open.libra.dag.exception.CyclicDagException;
+import rabbit.open.libra.dag.exception.DagException;
 import rabbit.open.libra.dag.exception.NoPathException;
 
 import java.io.Serializable;
@@ -71,7 +72,7 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
             throw new NoPathException();
         }
         this.maxNodeSize = maxNodeSize;
-        runningNodes = new HashSet<>(maxNodeSize);
+        runningNodes = new HashSet<>(getMaxNodeSize());
         doCycleChecking();
         loadNodes(this.head);
     }
@@ -102,7 +103,8 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
             saveGraph();
             scheduleDagNode((T) head);
         } else {
-            for (T runningNode : runningNodes) {
+            Set<T> tmp = new HashSet<>(runningNodes);
+            for (T runningNode : tmp) {
                 runningNode.doSchedule();
             }
         }
@@ -203,10 +205,28 @@ public abstract class DirectedAcyclicGraph<T extends DagNode> implements Seriali
         ArrayList<T> path = new ArrayList<>();
         path.add(this.head);
         doCycleChecking(this.head, path);
+        doPathChecking();
+    }
+
+    /**
+     * 检查是否每条线路都是闭环
+     * @author  xiaoqianbin
+     * @date    2020/8/25
+     **/
+    private void doPathChecking() {
+        for (List<T> p : paths) {
+            if (getTail() != p.get(p.size() - 1)) {
+                throw new DagException(String.format("unfinished path[%s] is found", p));
+            }
+        }
     }
 
     protected void doCycleChecking(T from, List<T> path) {
         List<T> pathList = new ArrayList<>(path);
+        if (from.getNextNodes().isEmpty()) {
+            paths.add(path);
+            return;
+        }
         for (DagNode nextNode : from.getNextNodes()) {
             T node = (T) nextNode;
             if (node == tail) {
