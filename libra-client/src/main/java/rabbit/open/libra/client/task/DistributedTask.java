@@ -2,7 +2,6 @@ package rabbit.open.libra.client.task;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import rabbit.open.libra.client.Task;
-import rabbit.open.libra.dag.schedule.ScheduleContext;
 
 import javax.annotation.PostConstruct;
 
@@ -24,11 +23,6 @@ public abstract class DistributedTask implements Task {
     @PostConstruct
     public void init() {
         monitor.register(this);
-    }
-
-    @Override
-    public void execute(ScheduleContext context) {
-
     }
 
     /**

@@ -135,6 +135,7 @@ public class DagTaskNode extends DagNode {
         context.setAppName(appName);
         taskId = UUID.randomUUID().toString().replaceAll("-", "");
         context.setTaskId(taskId);
+        context.setContext(graph.getContext());
         context.setSplitsCount(splitsCount);
         context.setScheduleDate(graph.getScheduleDate());
         context.setFireDate(graph.getFireDate());

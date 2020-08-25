@@ -20,8 +20,10 @@ import rabbit.open.libra.test.tasks.MySchedulerTask;
 import rabbit.open.libra.test.tasks.SimpleTask;
 
 import javax.annotation.Resource;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
@@ -157,6 +159,9 @@ public class DistributedTaskTest {
      **/
     @Test
     public void complexScheduleTest() throws InterruptedException {
+        HashMap<String, Serializable> context = new HashMap<>();
+        final String value = "context-value";
+        context.put("context", value);
         Semaphore s = new Semaphore(0);
         mySchedulerTask.setScheduleFinished(dagId -> {
             if (dagId.equals("complex-graph")) {
@@ -181,6 +186,7 @@ public class DistributedTaskTest {
                 logger.info("schedule[{}] is started at {}", context.getScheduleId(), fireDate);
                 TestCase.assertEquals(0, s.availablePermits());
                 s.release();
+                TestCase.assertEquals(context.getContextValue("context"), value);
             }
         };
         task1.setMonitor(subscriber);
@@ -202,6 +208,7 @@ public class DistributedTaskTest {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
                 logger.info("task[{}][{}-{}] is started at {}", getTaskName(), context.getScheduleId(), context.getIndex(), fireDate);
                 s.release();
+                TestCase.assertEquals(context.getContextValue("context"), value);
             }
 
             @Override
@@ -238,6 +245,7 @@ public class DistributedTaskTest {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
                 logger.info("task[{}][{}-{}] is started at {}", getTaskName(), context.getScheduleId(), context.getIndex(), fireDate);
                 s.release();
+                TestCase.assertEquals(context.getContextValue("context"), value);
             }
         };
         task3.setMonitor(subscriber);
@@ -260,6 +268,7 @@ public class DistributedTaskTest {
                 logger.info("task[{}][{}-{}] is started at {}", getTaskName(), context.getScheduleId(), context.getIndex(), fireDate);
                 TestCase.assertEquals(1 + 2 + 3, s.availablePermits());
                 s.release();
+                TestCase.assertEquals(context.getContextValue("context"), value);
             }
         };
         task4.setMonitor(subscriber);
@@ -279,11 +288,11 @@ public class DistributedTaskTest {
         n4.addNextNode(tail);
 
         RuntimeDagInstance graph = new RuntimeDagInstance(header, tail, 64);
-        graph.getPaths().forEach(System.out::println);
         String dagId = "complex-graph";
         graph.setDagName("complex-graph");
         graph.setCronExpression("0 * 1 * * *");
         graph.setDagId(dagId);
+        graph.setContext(context);
         mySchedulerTask.getRegistryHelper().deleteRecursive(RegistryHelper.GRAPHS + Constant.SP + graph.getDagId());
         mySchedulerTask.createGraphNode(graph);
         mySchedulerTask.scheduleGraph(graph);

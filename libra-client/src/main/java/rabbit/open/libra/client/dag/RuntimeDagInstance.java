@@ -2,12 +2,10 @@ package rabbit.open.libra.client.dag;
 
 import rabbit.open.libra.client.exception.LibraException;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * dag运行态实例
@@ -18,6 +16,11 @@ import java.util.List;
 public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * context
+     **/
+    private Map<String, Serializable> context = new HashMap<>();
 
     // 调度id
     private String scheduleId;
@@ -102,4 +105,11 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
         this.fireDate = fireDate;
     }
 
+    public void setContext(Map<String, Serializable> context) {
+        this.context = context;
+    }
+
+    public Map<String, Serializable> getContext() {
+        return context;
+    }
 }

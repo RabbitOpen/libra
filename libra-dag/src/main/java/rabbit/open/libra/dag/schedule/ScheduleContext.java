@@ -52,10 +52,6 @@ public class ScheduleContext implements Serializable {
      **/
     private int splitsCount = 0;
 
-    public void setContext(String key, Serializable value) {
-        this.context.put(key, value);
-    }
-
     public Serializable getContextValue(String key) {
         return context.get(key);
     }
