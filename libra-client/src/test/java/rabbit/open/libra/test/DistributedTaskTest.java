@@ -16,6 +16,7 @@ import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.client.task.TaskSubscriber;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
+import rabbit.open.libra.test.tasks.SampleDagTaskNode;
 import rabbit.open.libra.test.tasks.MySchedulerTask;
 import rabbit.open.libra.test.tasks.SimpleTask;
 
@@ -28,11 +29,12 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 /**
+ * 分布式任务测试
  * @author xiaoqianbin
  * @date 2020/8/14
  **/
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration({"classpath*:/applicationContext.xml"})
+@ContextConfiguration({"classpath*:/distributed-task.xml"})
 public class DistributedTaskTest {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -55,9 +57,9 @@ public class DistributedTaskTest {
     @Test
     public void simpleTest() throws NoSuchFieldException, IllegalAccessException, InterruptedException {
         TestCase.assertEquals(schedulerTask, mySchedulerTask);
-        MyDagTaskNode head = new MyDagTaskNode("head");
-        DagTaskNode task = new MyDagTaskNode("task");
-        DagTaskNode tail = new MyDagTaskNode("tail");
+        SampleDagTaskNode head = new SampleDagTaskNode("head");
+        DagTaskNode task = new SampleDagTaskNode("task");
+        DagTaskNode tail = new SampleDagTaskNode("tail");
         head.addNextNode(task);
         task.addNextNode(tail);
         Semaphore s = new Semaphore(0);

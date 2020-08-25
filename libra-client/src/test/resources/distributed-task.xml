@@ -8,13 +8,11 @@
     <context:component-scan base-package="rabbit.open.libra.test"/>
 
     <bean id="registryConfig" class="rabbit.open.libra.client.RegistryConfig">
-        <property name="namespace" value="/megrez/loan"/>
+        <property name="namespace" value="/megrez/loan/distributed"/>
         <property name="hosts" value="localhost:2181"/>
     </bean>
 
-    <!--<bean id="schedulerTask" class="rabbit.open.libra.client.task.SchedulerTask"></bean>-->
-
-
+    <!--
     <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
             <list>
@@ -51,7 +49,7 @@
         <property name="threshold">
             <value>${jdbc.threshold}</value>
         </property>
-        <!-- 获取连接等待时间(ms)默认500ms，超过这个时间就会尝试新建连接 -->
+        &lt;!&ndash; 获取连接等待时间(ms)默认500ms，超过这个时间就会尝试新建连接 &ndash;&gt;
         <property name="fetchTimeOut">
             <value>${jdbc.fetchTimeOut}</value>
         </property>
@@ -59,6 +57,7 @@
             <value>20</value>
         </property>
     </bean>
+    -->
 
 </beans>	
 

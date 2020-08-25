@@ -36,25 +36,25 @@ public class TaskSubscriber extends ZookeeperMonitor {
      * 运行任务线程数
      **/
     @Value("${libra.task.runner.corePoolSize:10}")
-    private int coreRunnerSize;
+    private int coreRunnerSize = 10;
 
     /**
      * 运行任务队列
      **/
     @Value("${libra.task.runner.maxPoolSize:10}")
-    private int maxRunnerSize;
+    private int maxRunnerSize = 10;
 
     /**
      * 调度任务队列
      **/
     @Value("${libra.task.runner.taskQueueSize:1024}")
-    private int taskQueueSize;
+    private int taskQueueSize = 1024;
 
     /**
      * 最大同时监控的任务类型个数
      **/
     @Value("${libra.task.runner.maxMonitorTaskSize:4096}")
-    private int maxMonitorTaskSize;
+    private int maxMonitorTaskSize = 4096;
 
     /**
      * 任务列表
@@ -492,5 +492,9 @@ public class TaskSubscriber extends ZookeeperMonitor {
             }
         }
         logger.info("compensation is finished");
+    }
+
+    public void setConfig(RegistryConfig config) {
+        this.config = config;
     }
 }

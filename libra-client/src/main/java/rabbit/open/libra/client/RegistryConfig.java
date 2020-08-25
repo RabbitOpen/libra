@@ -13,7 +13,7 @@ import java.io.Serializable;
 public class RegistryConfig implements Serializable {
 
     // zk地址
-    @Value("${zookeeper.hosts.url:localhost:2181}")
+    @Value("${libra.zookeeper.host:localhost:2181}")
     private String hosts;
 
     // 监控根节点
