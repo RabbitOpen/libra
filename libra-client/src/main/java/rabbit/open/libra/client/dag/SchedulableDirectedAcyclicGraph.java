@@ -64,7 +64,7 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
      * @return
      */
     public Date getNextScheduleTime() {
-        CronTrigger trigger = new CronTrigger(cronExpression);
+        CronTrigger trigger = new CronTrigger(getCronExpression());
         return trigger.nextExecutionTime(new TriggerContext() {
 
             @Override
@@ -79,7 +79,7 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
 
             @Override
             public Date lastCompletionTime() {
-                return lastFireDate;
+                return getLastFireDate();
             }
         });
     }
