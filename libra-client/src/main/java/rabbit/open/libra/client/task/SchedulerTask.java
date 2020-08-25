@@ -144,6 +144,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
                 try2AcquireControl(schedulePath, getLeaderName(), CreateMode.EPHEMERAL);
             } else {
                 if (getLeaderName().equals(getRegistryHelper().readData(schedulePath))) {
+                    logger.info("I'm elected to be the leader!");
                     leader = true;
                 } else {
                     leader = false;
@@ -164,6 +165,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
             while (true) {
                 try {
                     if (leader) {
+                        logger.info("begin to schedule graphs.........");
                         doSchedule();
                     }
                     if (quitSemaphore.tryAcquire(3, TimeUnit.SECONDS)) {
@@ -290,9 +292,6 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         if (!CollectionUtils.isEmpty(children)) {
             throw new RepeatedScheduleException(graph.getDagId());
         }
-        graph.injectTask(this);
-        graph.injectNodeGraph();
-        graph.setTask(this);
         graph.setScheduleId(UUID.randomUUID().toString().replaceAll("-", ""));
         graph.setFireDate(new Date());
         graph.setScheduleDate(new Date());

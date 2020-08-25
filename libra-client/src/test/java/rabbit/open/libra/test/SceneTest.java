@@ -15,13 +15,17 @@ import rabbit.open.libra.client.dag.DagHeader;
 import rabbit.open.libra.client.dag.DagTail;
 import rabbit.open.libra.client.dag.DagTaskNode;
 import rabbit.open.libra.client.dag.RuntimeDagInstance;
+import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.client.task.TaskSubscriber;
+import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 import rabbit.open.libra.test.tasks.MySchedulerTask;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import static rabbit.open.libra.client.Constant.SP;
@@ -43,14 +47,13 @@ public class SceneTest {
      **/
     @Test
     public void recoveringTaskTest() throws InterruptedException {
-        TaskSubscriber subscriber = new TaskSubscriber();
         RegistryConfig rc = new RegistryConfig();
         rc.setHosts("localhost:2181");
         rc.setNamespace("/megrez/loan/scene");
-        subscriber.setConfig(rc);
-        subscriber.init();
         RegistryHelper helper = new RegistryHelper(rc.getHosts(), rc.getNamespace());
         helper.init();
+        helper.deleteRecursive("/meta/tasks");
+        helper.deleteRecursive(RegistryHelper.META_CONTROLLER + SP + SchedulerTask.class.getSimpleName());
         helper.create(RegistryHelper.META_CONTROLLER + SP + SchedulerTask.class.getSimpleName(),
                 "leader", CreateMode.EPHEMERAL);
         // 删除dag节点
@@ -71,13 +74,13 @@ public class SceneTest {
             @Override
             public void execute(ScheduleContext context) {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
-                logger.info("schedule[{}] is started at {}", context.getScheduleId(), fireDate);
+                logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
                 TestCase.assertEquals(0, s.availablePermits());
                 s.release();
             }
         };
-        task1.setMonitor(subscriber);
-        task1.init();
+        register(helper, task1);
+
         DistributedTask task2 = new DistributedTask() {
             @Override
             public String getTaskName() {
@@ -92,13 +95,12 @@ public class SceneTest {
             @Override
             public void execute(ScheduleContext context) {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
-                logger.info("schedule[{}] is started at {}", context.getScheduleId(), fireDate);
-                TestCase.assertEquals(0, s.availablePermits());
+                logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
                 s.release();
             }
         };
-        task2.setMonitor(subscriber);
-        task2.init();
+        register(helper, task2);
+
         DistributedTask task3 = new DistributedTask() {
             @Override
             public String getTaskName() {
@@ -113,18 +115,17 @@ public class SceneTest {
             @Override
             public void execute(ScheduleContext context) {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
-                logger.info("schedule[{}] is started at {}", context.getScheduleId(), fireDate);
-                TestCase.assertEquals(0, s.availablePermits());
-                s.release();
+                logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
+                TestCase.assertEquals(1, s.availablePermits());
+                s.release(2);
             }
         };
-        task3.setMonitor(subscriber);
-        task3.init();
+        register(helper, task3);
 
         DistributedTask task4 = new DistributedTask() {
             @Override
             public String getTaskName() {
-                return "SceneTask-3";
+                return "SceneTask-4";
             }
 
             @Override
@@ -135,15 +136,12 @@ public class SceneTest {
             @Override
             public void execute(ScheduleContext context) {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
-                logger.info("schedule[{}] is started at {}", context.getScheduleId(), fireDate);
-                TestCase.assertEquals(0, s.availablePermits());
-                s.release();
+                logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
+                TestCase.assertEquals(3, s.availablePermits());
+                s.release(3);
             }
         };
-        task4.setMonitor(subscriber);
-        task4.init();
-        subscriber.destroy();
-
+        register(helper, task4);
 
         DagHeader header = new DagHeader();
         DagTail tail = new DagTail();
@@ -162,26 +160,44 @@ public class SceneTest {
         graph.setDagName("recover-graph");
         graph.setCronExpression("0 * 1 * * *");
         graph.setDagId(dagId);
-        // 发布
-        helper.create(RegistryHelper.GRAPHS + SP + graph.getDagId(), graph, CreateMode.PERSISTENT);
+
+        header.setScheduleStatus(ScheduleStatus.FINISHED);
+        n1.setScheduleStatus(ScheduleStatus.RUNNING);
+        n2.setScheduleStatus(ScheduleStatus.FINISHED);
+        graph.getRunningNodes().add(n1);
+
+        // 创建dag
+        helper.createPersistNode(RegistryHelper.GRAPHS + SP + graph.getDagId(), graph);
+        graph.setScheduleId(UUID.randomUUID().toString().replaceAll("-", ""));
+        graph.setFireDate(new Date());
+        graph.setScheduleDate(new Date());
+
+        // 发布一个已经运行中的节点
+        helper.createPersistNode(RegistryHelper.GRAPHS + SP + graph.getDagId() + SP + graph.getScheduleId(), graph);
 
         // 模拟调度节点上线
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("classpath:/scene");
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("classpath:/scene.xml");
         context.start();
-        subscriber = context.getBean(TaskSubscriber.class);
-        task1.setMonitor(subscriber);
-        task2.setMonitor(subscriber);
-        task3.setMonitor(subscriber);
-        task4.setMonitor(subscriber);
-        task1.init();
-        task2.init();
-        task3.init();
-        task4.init();
-        SchedulerTask schedulerTask = context.getBean(MySchedulerTask.class);
-
+        TaskSubscriber subscriber = context.getBean(TaskSubscriber.class);
+        subscriber.register(task1);
+        subscriber.register(task2);
+        subscriber.register(task3);
+        subscriber.register(task4);
+        MySchedulerTask schedulerTask = context.getBean(MySchedulerTask.class);
+        schedulerTask.setScheduleFinished(id -> {
+            if (id.equals(dagId)) {
+                s.release(10);
+                logger.info("dag[%s] finished", id);
+            }
+        });
         // 模拟controller掉线
         helper.destroy();
+        s.acquire(10 + 1 + 2 + 3);
         context.close();
+    }
 
+    private void register(RegistryHelper helper, DistributedTask task) {
+        String name = task.getAppName() + Constant.SP + task.getTaskName();
+        helper.registerTaskMeta(name, new TaskMeta(task), false);
     }
 }

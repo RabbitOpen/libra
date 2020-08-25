@@ -16,9 +16,8 @@ import rabbit.open.libra.client.task.DistributedTask;
 import rabbit.open.libra.client.task.SchedulerTask;
 import rabbit.open.libra.client.task.TaskSubscriber;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
-import rabbit.open.libra.test.tasks.SampleDagTaskNode;
 import rabbit.open.libra.test.tasks.MySchedulerTask;
-import rabbit.open.libra.test.tasks.SimpleTask;
+import rabbit.open.libra.test.tasks.SampleDagTaskNode;
 
 import javax.annotation.Resource;
 import java.io.Serializable;
@@ -27,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
 
 /**
  * 分布式任务测试
@@ -46,7 +46,7 @@ public class DistributedTaskTest {
     SchedulerTask schedulerTask;
 
     @Autowired
-    SimpleTask task;
+    TaskSubscriber subscriber;
 
     /**
      * <b>@description 简单测试 </b>
@@ -115,6 +115,8 @@ public class DistributedTaskTest {
         DagHeader header = new DagHeader();
         DagTail tail = new DagTail();
         Semaphore quit = new Semaphore(0);
+        SimpleTask task = new SimpleTask();
+        subscriber.register(task);
         task.setTask(ctx -> {
             logger.info("schedule date: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ctx.getScheduleDate()));
             quit.release();
@@ -149,10 +151,6 @@ public class DistributedTaskTest {
         }
         quit.acquire(2);
     }
-
-
-    @Autowired
-    TaskSubscriber subscriber;
 
     /**
      * 复杂调度测试
@@ -299,5 +297,32 @@ public class DistributedTaskTest {
         mySchedulerTask.createGraphNode(graph);
         mySchedulerTask.scheduleGraph(graph);
         s.acquire(1 + task1.getSplitsCount() + task2.getSplitsCount() + task3.getSplitsCount() + task4.getSplitsCount());
+    }
+
+    public class SimpleTask extends DistributedTask {
+
+        private Consumer<ScheduleContext> task;
+
+        @Override
+        public void execute(ScheduleContext context) {
+            if (null != task) {
+                task.accept(context);
+            }
+        }
+
+        public void setTask(Consumer<ScheduleContext> task) {
+            this.task = task;
+        }
+
+        @Override
+        public String getTaskName() {
+            return "SimpleTask";
+        }
+
+        public SimpleTask() {
+            super();
+        }
+
+
     }
 }
