@@ -5,7 +5,6 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.util.CollectionUtils;
 import rabbit.open.libra.client.anno.ConditionalOnMissingBeanType;
 
 import java.util.Map;
