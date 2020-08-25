@@ -26,9 +26,6 @@ public class TaskMeta implements Serializable {
      **/
     private int parallel;
 
-    // 任务分组名
-    private String groupName;
-
     // 任务名
     private String taskName;
 
@@ -52,14 +49,6 @@ public class TaskMeta implements Serializable {
 
     public void setParallel(int parallel) {
         this.parallel = parallel;
-    }
-
-    public String getGroupName() {
-        return groupName;
-    }
-
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
     }
 
     public String getTaskName() {
