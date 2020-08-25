@@ -30,7 +30,7 @@
         </rollingPolicy>
     </appender>
 
-    <logger name="org.apache.zookeeper.ClientCnxn" level="info" />
+    <logger name="org.apache.zookeeper.ClientCnxn" level="info"/>
 
     <root level="debug">
         <appender-ref ref="DETAIL"/>

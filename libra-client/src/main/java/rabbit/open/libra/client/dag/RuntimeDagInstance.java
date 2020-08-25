@@ -21,7 +21,7 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
 
     // 调度id
     private String scheduleId;
-    
+
     /**
      * 业务调度日期
      */
@@ -86,20 +86,20 @@ public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
         this.scheduleId = scheduleId;
     }
 
-	public Date getScheduleDate() {
-		return scheduleDate;
-	}
+    public Date getScheduleDate() {
+        return scheduleDate;
+    }
 
-	public void setScheduleDate(Date scheduleDate) {
-		this.scheduleDate = scheduleDate;
-	}
+    public void setScheduleDate(Date scheduleDate) {
+        this.scheduleDate = scheduleDate;
+    }
 
-	public Date getFireDate() {
-		return fireDate;
-	}
+    public Date getFireDate() {
+        return fireDate;
+    }
 
-	public void setFireDate(Date fireDate) {
-		this.fireDate = fireDate;
-	}
-    
+    public void setFireDate(Date fireDate) {
+        this.fireDate = fireDate;
+    }
+
 }

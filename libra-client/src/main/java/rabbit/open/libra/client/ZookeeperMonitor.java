@@ -28,8 +28,8 @@ public abstract class ZookeeperMonitor {
 
     /**
      * 获取zk交互对象实例
-     * @author  xiaoqianbin
-     * @date    2020/8/16
+     * @author xiaoqianbin
+     * @date 2020/8/16
      **/
     public RegistryHelper getRegistryHelper() {
         return helper;
@@ -51,8 +51,8 @@ public abstract class ZookeeperMonitor {
 
     /**
      * 初始化
-     * @author  xiaoqianbin
-     * @date    2020/8/16
+     * @author xiaoqianbin
+     * @date 2020/8/16
      **/
     protected void init() {
         RegistryConfig config = getConfig();

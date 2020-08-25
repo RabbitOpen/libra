@@ -7,7 +7,8 @@ package rabbit.open.libra.client;
  **/
 public abstract class Constant {
 
-    private Constant() {}
+    private Constant() {
+    }
 
     /**
      * 默认切片数
@@ -17,7 +18,7 @@ public abstract class Constant {
     /**
      * 默认任务并发数
      **/
-    public static final int DEFAULT_CONCURRENCE_COUNT = 3;
+    public static final int DEFAULT_PARALLEL_COUNT = 1;
 
     /**
      * 分隔符

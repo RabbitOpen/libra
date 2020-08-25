@@ -19,8 +19,8 @@ import java.lang.annotation.Target;
 public @interface ConditionalOnMissingBeanType {
     /**
      * 希望排除的bean类型
-     * @author  xiaoqianbin
-     * @date    2020/8/20
+     * @author xiaoqianbin
+     * @date 2020/8/20
      **/
     Class<?> type();
 }

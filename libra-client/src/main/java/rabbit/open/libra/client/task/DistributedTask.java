@@ -15,8 +15,8 @@ public abstract class DistributedTask implements Task {
 
     /**
      * 任务监听器
-     * @author  xiaoqianbin
-     * @date    2020/8/14
+     * @author xiaoqianbin
+     * @date 2020/8/14
      **/
     @Autowired
     protected TaskSubscriber monitor;
@@ -33,8 +33,13 @@ public abstract class DistributedTask implements Task {
 
     /**
      * 中断任务
-     * @author  xiaoqianbin
-     * @date    2020/8/24
+     * @author xiaoqianbin
+     * @date 2020/8/24
      **/
-    public void interrupt() {}
+    public void interrupt() {
+    }
+
+    public void setMonitor(TaskSubscriber monitor) {
+        this.monitor = monitor;
+    }
 }

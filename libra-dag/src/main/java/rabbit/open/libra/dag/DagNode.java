@@ -12,8 +12,6 @@ import java.util.List;
 @SuppressWarnings({"serial", "unchecked"})
 public abstract class DagNode implements Serializable {
 
-    public static final long serialVersionUID = 1L;
-
     /**
      * 下一批节点
      **/
@@ -36,9 +34,9 @@ public abstract class DagNode implements Serializable {
 
     /**
      * 添加后续节点
-     * @param	next
-     * @author  xiaoqianbin
-     * @date    2020/8/7
+     * @param    next
+     * @author xiaoqianbin
+     * @date 2020/8/7
      **/
     public void addNextNode(DagNode next) {
         this.nextNodes.add(next);
@@ -47,15 +45,15 @@ public abstract class DagNode implements Serializable {
 
     /**
      * 执行调度
-     * @author  xiaoqianbin
-     * @date    2020/8/8
+     * @author xiaoqianbin
+     * @date 2020/8/8
      **/
     protected abstract void doSchedule();
 
     /**
      * 判断节点是否已经被调度过
-     * @author  xiaoqianbin
-     * @date    2020/8/8
+     * @author xiaoqianbin
+     * @date 2020/8/8
      **/
     protected abstract boolean isScheduled();
 
@@ -71,7 +69,7 @@ public abstract class DagNode implements Serializable {
         this.scheduleStatus = scheduleStatus;
     }
 
-	public <T extends DagNode, D extends DirectedAcyclicGraph<T>> D getGraph() {
+    public <T extends DagNode, D extends DirectedAcyclicGraph<T>> D getGraph() {
         return (D) graph;
     }
 

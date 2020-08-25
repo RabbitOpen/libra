@@ -38,26 +38,26 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
     public SchedulableDirectedAcyclicGraph(DagTaskNode head, DagTaskNode tail, int maxNodeSize) {
         super(head, tail, maxNodeSize);
     }
-    
-	/**
-	 * <b>@description 注入task对象 </b>
-	 * @param task
-	 */
-	public void injectTask(SchedulerTask task) {
-		for (DagTaskNode node : getNodes()) {
-			node.setTask(task);
-			node.setGraph(this);
-		}
-	}
-	
-	/**
-	 * <b>@description 注入dag </b>
-	 */
-	public void injectNodeGraph() {
-		for (DagTaskNode node : getNodes()) {
-			node.setGraph(this);
-		}
-	}
+
+    /**
+     * <b>@description 注入task对象 </b>
+     * @param task
+     */
+    public void injectTask(SchedulerTask task) {
+        for (DagTaskNode node : getNodes()) {
+            node.setTask(task);
+            node.setGraph(this);
+        }
+    }
+
+    /**
+     * <b>@description 注入dag </b>
+     */
+    public void injectNodeGraph() {
+        for (DagTaskNode node : getNodes()) {
+            node.setGraph(this);
+        }
+    }
 
     /**
      * <b>@description 获取任务下次执行时间 </b>

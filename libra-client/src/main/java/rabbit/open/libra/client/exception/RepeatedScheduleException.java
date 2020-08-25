@@ -6,8 +6,8 @@ package rabbit.open.libra.client.exception;
 @SuppressWarnings("serial")
 public class RepeatedScheduleException extends LibraException {
 
-	public RepeatedScheduleException(String dagId) {
-		super(String.format("repeated schedule on dag[%s]", dagId));
-	}
+    public RepeatedScheduleException(String dagId) {
+        super(String.format("repeated schedule on dag[%s]", dagId));
+    }
 
 }

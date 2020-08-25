@@ -8,15 +8,15 @@ package rabbit.open.libra.client.dag;
 @SuppressWarnings("serial")
 public class DagHeader extends DagTaskNode {
 
-	public DagHeader() {
-		this("header", 1, 1, "no-app");
-	}
-	
-    public DagHeader(String taskName, int parallel, int splitsCount, String appName) {
-		super(taskName, parallel, splitsCount, appName);
-	}
+    public DagHeader() {
+        this("header", 1, 1, "no-app");
+    }
 
-	@Override
+    public DagHeader(String taskName, int parallel, int splitsCount, String appName) {
+        super(taskName, parallel, splitsCount, appName);
+    }
+
+    @Override
     protected void doSchedule() {
         getGraph().onDagNodeExecuted(this);
     }

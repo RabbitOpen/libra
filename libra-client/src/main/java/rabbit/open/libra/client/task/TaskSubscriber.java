@@ -122,8 +122,8 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 创建加载任务分片的任务
-     * @author  xiaoqianbin
-     * @date    2020/8/17
+     * @author xiaoqianbin
+     * @date 2020/8/17
      **/
     private void submitTaskLoadingJob() {
         taskLoader.submit(() -> {
@@ -144,8 +144,8 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 加载任务
-     * @author  xiaoqianbin
-     * @date    2020/8/14
+     * @author xiaoqianbin
+     * @date 2020/8/14
      **/
     protected void loadTask() {
         if (!zkPrepared) {
@@ -173,12 +173,13 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 按任务id进行任务调度
-     * @param	taskMetaNodePath
-	 * @param	taskId
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    taskMetaNodePath
+     * @param    taskId
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private void loadTaskById(String taskMetaNodePath, String taskId) {
+        logger.info("begin to load task[{}/{}]", taskMetaNodePath, taskId);
         String taskIdPath = taskMetaNodePath + Constant.SP + taskId;
         TaskExecutionContext meta = getTaskMeta(taskMetaNodePath, taskId);
         if (!meta.hasQuota()) {
@@ -194,12 +195,12 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 尝试抢占一个任务片
-     * @param	taskMetaNodePath
-	 * @param	taskIdPath
-	 * @param	meta
-	 * @param	existedSplits
-     * @author  xiaoqianbin
-     * @date    2020/8/24
+     * @param    taskMetaNodePath
+     * @param    taskIdPath
+     * @param    meta
+     * @param    existedSplits
+     * @author xiaoqianbin
+     * @date 2020/8/24
      **/
     private void try2GrabTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionContext meta, List<String> existedSplits) {
         for (int i = 0; i < meta.getSplitsCount(); i++) {
@@ -218,10 +219,10 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 获取task meta信息
-     * @param	taskMetaNodePath
-	 * @param	taskId
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    taskMetaNodePath
+     * @param    taskId
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private TaskExecutionContext getTaskMeta(String taskMetaNodePath, String taskId) {
         if (!taskExecutionMetaMap.containsKey(taskId)) {
@@ -237,12 +238,12 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 尝试提交任务片
-     * @param	taskMetaNodePath
-	 * @param	taskIdPath
-	 * @param	meta
-	 * @param	index
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    taskMetaNodePath
+     * @param    taskIdPath
+     * @param    meta
+     * @param    index
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private boolean try2SubmitTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionContext meta, int index) {
         if (tryAcquireTaskPiece(taskIdPath + "/R-" + index)) {
@@ -270,11 +271,11 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 获取下一个任务片
-     * @param	taskMetaNodePath
-	 * @param	taskIdPath
-	 * @param	meta
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    taskMetaNodePath
+     * @param    taskIdPath
+     * @param    meta
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private void fetchNextTaskPiece(String taskMetaNodePath, String taskIdPath, TaskExecutionContext meta) {
         try {
@@ -309,9 +310,9 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 创建执行错误节点
-     * @param	nodePath
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    nodePath
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private void createNode(String nodePath) {
         try {
@@ -324,9 +325,9 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 从meta信息中读取context
-     * @param	meta
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    meta
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private ScheduleContext getContextFromMeta(TaskExecutionContext meta) {
         ScheduleContext context = new ScheduleContext();
@@ -343,24 +344,24 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 获取已经被调度过的分片
-     * @param	list
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    list
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private List<String> getScheduledPieces(List<String> list) {
         return list.stream().map(s -> {
-                if (s.startsWith("R-") || s.startsWith("E-")) {
-                    return s.substring(2);
-                }
-                return s;
-            }).collect(Collectors.toList());
+            if (s.startsWith("R-") || s.startsWith("E-")) {
+                return s.substring(2);
+            }
+            return s;
+        }).collect(Collectors.toList());
     }
 
     /**
      * 尝试抢占任务分片
-     * @param	nodePath
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @param    nodePath
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     private boolean tryAcquireTaskPiece(String nodePath) {
         try {
@@ -373,9 +374,9 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 任务注册
-     * @param	task
-     * @author  xiaoqianbin
-     * @date    2020/8/14
+     * @param    task
+     * @author xiaoqianbin
+     * @date 2020/8/14
      **/
     public void register(DistributedTask task) {
         distributedTasks.add(task);
@@ -404,8 +405,8 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 取出待扫描路径
-     * @author  xiaoqianbin
-     * @date    2020/8/14
+     * @author xiaoqianbin
+     * @date 2020/8/14
      **/
     private String getPath2Scan() {
         pathLock.lock();
@@ -418,9 +419,9 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * 添加待扫描路径
-     * @param	path
-     * @author  xiaoqianbin
-     * @date    2020/8/14
+     * @param    path
+     * @author xiaoqianbin
+     * @date 2020/8/14
      **/
     private void addScanPath(String path) {
         pathLock.lock();
@@ -472,10 +473,10 @@ public class TaskSubscriber extends ZookeeperMonitor {
 
     /**
      * zk恢复时补偿操作
-     * @param	loadPathFunc     路径加载函数
-     * @param	funcCompensation 补偿函数
-     * @author  xiaoqianbin
-     * @date    2020/8/16
+     * @param    loadPathFunc 路径加载函数
+     * @param    funcCompensation 补偿函数
+     * @author xiaoqianbin
+     * @date 2020/8/16
      **/
     private void doCompensation(Supplier<String> loadPathFunc, Consumer<String> funcCompensation) {
         logger.info("begin to doCompensation");

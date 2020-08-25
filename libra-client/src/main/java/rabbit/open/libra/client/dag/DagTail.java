@@ -8,14 +8,14 @@ package rabbit.open.libra.client.dag;
 @SuppressWarnings("serial")
 public class DagTail extends DagTaskNode {
 
-	public DagTail() {
-		this("tail", 1, 1, "no-app");
-	}
-	
+    public DagTail() {
+        this("tail", 1, 1, "no-app");
+    }
+
     public DagTail(String taskName, int parallel, int splitsCount, String appName) {
-		super(taskName, parallel, splitsCount, appName);
-	}
-    
+        super(taskName, parallel, splitsCount, appName);
+    }
+
     @Override
     protected void doSchedule() {
         getGraph().onDagNodeExecuted(this);

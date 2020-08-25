@@ -73,9 +73,9 @@ public class RegistryHelper {
 
     /**
      * 递归创建永久节点
-     * @param	relativePath
-     * @author  xiaoqianbin
-     * @date    2020/7/16
+     * @param    relativePath
+     * @author xiaoqianbin
+     * @date 2020/7/16
      **/
     public void createNode(String relativePath) {
         createNode(namespace + relativePath, null, CreateMode.PERSISTENT);
@@ -83,10 +83,10 @@ public class RegistryHelper {
 
     /**
      * 递归创建永久节点
-     * @param	relativePath
-     * @param	data            数据
-     * @author  xiaoqianbin
-     * @date    2020/7/16
+     * @param    relativePath
+     * @param    data 数据
+     * @author xiaoqianbin
+     * @date 2020/7/16
      **/
     public void createPersistNode(String relativePath, Object data) {
         createNode(namespace + relativePath, data, CreateMode.PERSISTENT);
@@ -121,12 +121,12 @@ public class RegistryHelper {
 
     /**
      * 创建path (fullPath上的子节点)
-     * @param	fullPath
-	 * @param	data
-	 * @param	mode
-	 * @param	path
-     * @author  xiaoqianbin
-     * @date    2020/8/11
+     * @param    fullPath
+     * @param    data
+     * @param    mode
+     * @param    path
+     * @author xiaoqianbin
+     * @date 2020/8/11
      **/
     private boolean createPathNode(String fullPath, Object data, CreateMode mode, StringBuilder path) {
         try {
@@ -203,10 +203,10 @@ public class RegistryHelper {
 
     /**
      * 订阅数据变化
-     * @param	relativePath
-	 * @param	listener
-     * @author  xiaoqianbin
-     * @date    2020/7/24
+     * @param    relativePath
+     * @param    listener
+     * @author xiaoqianbin
+     * @date 2020/7/24
      **/
     public void subscribeDataChanges(String relativePath, IZkDataListener listener) {
         client.subscribeDataChanges(namespace + relativePath, listener);
@@ -214,9 +214,9 @@ public class RegistryHelper {
 
     /**
      * 订阅状态变更监听器
-     * @param	listener
-     * @author  xiaoqianbin
-     * @date    2020/7/16
+     * @param    listener
+     * @author xiaoqianbin
+     * @date 2020/7/16
      **/
     public void subscribeStateChanges(IZkStateListener listener) {
         client.subscribeStateChanges(listener);
@@ -324,10 +324,10 @@ public class RegistryHelper {
 
     /**
      * 写数据
-     * @param	relativePath
-	 * @param	data
-     * @author  xiaoqianbin
-     * @date    2020/7/24
+     * @param    relativePath
+     * @param    data
+     * @author xiaoqianbin
+     * @date 2020/7/24
      **/
     public void writeData(String relativePath, Object data) {
         client.writeData(namespace + relativePath, data);
@@ -335,11 +335,11 @@ public class RegistryHelper {
 
     /**
      * 更新数据
-     * @param	relativePath
-	 * @param	data
-	 * @param	expectedVersion
-     * @author  xiaoqianbin
-     * @date    2020/8/20
+     * @param    relativePath
+     * @param    data
+     * @param    expectedVersion
+     * @author xiaoqianbin
+     * @date 2020/8/20
      **/
     public void writeData(String relativePath, Object data, int expectedVersion) {
         client.writeData(namespace + relativePath, data, expectedVersion);
@@ -404,8 +404,8 @@ public class RegistryHelper {
 
     /**
      * 取消所有订阅
-     * @author  xiaoqianbin
-     * @date    2020/7/16
+     * @author xiaoqianbin
+     * @date 2020/7/16
      **/
     public void unsubscribeAll() {
         client.unsubscribeAll();

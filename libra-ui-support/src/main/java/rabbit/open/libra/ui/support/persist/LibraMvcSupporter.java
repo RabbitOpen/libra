@@ -45,8 +45,8 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
 
     /**
      * 获取实体类包路径
-     * @author  xiaoqianbin
-     * @date    2020/8/11
+     * @author xiaoqianbin
+     * @date 2020/8/11
      **/
     private String getEntityPackageName() {
         int length = TaskExecutionRecord.class.getSimpleName().length() + 1;
@@ -55,9 +55,9 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
 
     /**
      * 事务管理器
-     * @param	factory
-     * @author  xiaoqianbin
-     * @date    2020/7/30
+     * @param    factory
+     * @author xiaoqianbin
+     * @date 2020/7/30
      **/
     @Scope("singleton")
     @Bean

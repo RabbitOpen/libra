@@ -25,8 +25,8 @@ public class TaskExecutionContext extends ScheduleContext {
 
     /**
      * 判断任务是否还可以继续添加分片
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     public boolean hasQuota() {
         return semaphore.availablePermits() > 0;
@@ -34,8 +34,8 @@ public class TaskExecutionContext extends ScheduleContext {
 
     /**
      * 抢占额度
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     public boolean grabQuota() {
         return semaphore.tryAcquire();
@@ -43,8 +43,8 @@ public class TaskExecutionContext extends ScheduleContext {
 
     /**
      * 恢复额度
-     * @author  xiaoqianbin
-     * @date    2020/8/15
+     * @author xiaoqianbin
+     * @date 2020/8/15
      **/
     public void resume() {
         semaphore.release();

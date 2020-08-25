@@ -14,15 +14,15 @@ public class TaskMeta implements Serializable {
 
     /**
      * 切片个数
-     * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     private int splitsCount;
 
     /**
      * 任务并行度
-     * @author  xiaoqianbin
-     * @date    2020/7/13
+     * @author xiaoqianbin
+     * @date 2020/7/13
      **/
     private int parallel;
 
@@ -34,7 +34,7 @@ public class TaskMeta implements Serializable {
 
     public TaskMeta(Task task) {
         setSplitsCount(task.getSplitsCount());
-        setParallel(task.getConcurrenceCount());
+        setParallel(task.getParallel());
         setTaskName(task.getTaskName());
     }
 

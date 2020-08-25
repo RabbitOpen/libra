@@ -13,22 +13,22 @@ import java.util.function.Consumer;
 @Component
 public class SimpleTask extends DistributedTask {
 
-	private Consumer<ScheduleContext> task;
-	
+    private Consumer<ScheduleContext> task;
+
     @Override
     public void execute(ScheduleContext context) {
-    	if (null != task) {
-    		task.accept(context);
-    	}
+        if (null != task) {
+            task.accept(context);
+        }
     }
 
     public void setTask(Consumer<ScheduleContext> task) {
-		this.task = task;
-	}
-	
-	public SimpleTask() {
-		super();
-	}
-    
-    
+        this.task = task;
+    }
+
+    public SimpleTask() {
+        super();
+    }
+
+
 }
