@@ -2,8 +2,6 @@ package rabbit.open.libra.ui.support.persist.entity;
 
 import rabbit.open.orm.core.annotation.Entity;
 
-import java.util.Date;
-
 /**
  * dag任务执行记录
  * @author xiaoqianbin
@@ -11,16 +9,6 @@ import java.util.Date;
  **/
 @Entity(value = "GRAPH_EXECUTION_RECORD", autoSpeculate = true)
 public class GraphExecutionRecord extends ExecutionRecord {
-
-    /**
-     * 调度日期
-     **/
-    private Date scheduleDate;
-
-    /**
-     * 触发时间
-     **/
-    private Date fireDate;
 
     /**
      * dag id
@@ -35,23 +23,7 @@ public class GraphExecutionRecord extends ExecutionRecord {
     /**
      * task node count
      **/
-    private int taskNodeNum;
-
-    public Date getScheduleDate() {
-        return scheduleDate;
-    }
-
-    public void setScheduleDate(Date scheduleDate) {
-        this.scheduleDate = scheduleDate;
-    }
-
-    public Date getFireDate() {
-        return fireDate;
-    }
-
-    public void setFireDate(Date fireDate) {
-        this.fireDate = fireDate;
-    }
+    private Integer taskNodeNum;
 
     public String getDagId() {
         return dagId;
@@ -73,7 +45,7 @@ public class GraphExecutionRecord extends ExecutionRecord {
         return taskNodeNum;
     }
 
-    public void setTaskNodeNum(int taskNodeNum) {
+    public void setTaskNodeNum(Integer taskNodeNum) {
         this.taskNodeNum = taskNodeNum;
     }
 }

@@ -1,11 +1,6 @@
 package rabbit.open.libra.ui.support.persist.entity;
 
-import rabbit.open.orm.common.dml.Policy;
-import rabbit.open.orm.core.annotation.Column;
 import rabbit.open.orm.core.annotation.Entity;
-import rabbit.open.orm.core.annotation.PrimaryKey;
-
-import java.util.Date;
 
 /**
  * 任务执行记录
@@ -13,81 +8,96 @@ import java.util.Date;
  * @date 2020/7/28
  **/
 @Entity(value = "TASK_EXECUTION_RECORD", autoSpeculate = true)
-public class TaskExecutionRecord {
-
-    @PrimaryKey(policy = Policy.UUID)
-    @Column(value = "id", length = 40)
-    private String id;
+public class TaskExecutionRecord extends ExecutionRecord {
 
     /**
-     * 启动日期
+     * app name
      **/
-    @Column(value = "start", keyWord = true)
-    private Date start;
-
-    /**
-     * 结束日期
-     **/
-    @Column(value = "end", keyWord = true)
-    private Date end;
-
     private String appName;
 
-    private String groupName;
-
+    /**
+     * 任务名
+     **/
     private String taskName;
 
-    private String scheduleTime;
+    /**
+     * 任务id
+     **/
+    private String taskId;
 
-    public String getId() {
-        return id;
-    }
+    /**
+     * 调度id
+     **/
+    private String scheduleId;
 
-    public Date getStart() {
-        return start;
-    }
+    /**
+     * 切片数
+     **/
+    private Integer splitsCount;
 
-    public Date getEnd() {
-        return end;
-    }
+    /**
+     * 成功切片数
+     **/
+    private Integer success;
+
+    /**
+     * 失败切片数
+     **/
+    private Integer failed;
 
     public String getAppName() {
         return appName;
-    }
-
-    public String getGroupName() {
-        return groupName;
-    }
-
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public String getScheduleTime() {
-        return scheduleTime;
-    }
-
-    public void setStart(Date start) {
-        this.start = start;
-    }
-
-    public void setEnd(Date end) {
-        this.end = end;
     }
 
     public void setAppName(String appName) {
         this.appName = appName;
     }
 
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
+    public String getTaskName() {
+        return taskName;
     }
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
     }
 
-    public void setScheduleTime(String scheduleTime) {
-        this.scheduleTime = scheduleTime;
+    public String getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
+    }
+
+    public String getScheduleId() {
+        return scheduleId;
+    }
+
+    public void setScheduleId(String scheduleId) {
+        this.scheduleId = scheduleId;
+    }
+
+    public Integer getSplitsCount() {
+        return splitsCount;
+    }
+
+    public void setSplitsCount(Integer splitsCount) {
+        this.splitsCount = splitsCount;
+    }
+
+    public Integer getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Integer success) {
+        this.success = success;
+    }
+
+    public Integer getFailed() {
+        return failed;
+    }
+
+    public void setFailed(Integer failed) {
+        this.failed = failed;
     }
 }

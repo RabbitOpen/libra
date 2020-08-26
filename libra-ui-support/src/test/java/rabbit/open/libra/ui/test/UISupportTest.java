@@ -23,6 +23,7 @@ import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
 import rabbit.open.libra.ui.support.persist.entity.GraphExecutionRecord;
 import rabbit.open.libra.ui.support.persist.service.GraphExecutionRecordService;
+import rabbit.open.libra.ui.support.persist.service.TaskExecutionRecordService;
 import rabbit.open.libra.ui.support.task.WebSupportedSchedulerTask;
 
 import java.text.SimpleDateFormat;
@@ -46,8 +47,8 @@ public class UISupportTest {
 
     /**
      * 测试持久化记录
-     * @author  xiaoqianbin
-     * @date    2020/8/26
+     * @author xiaoqianbin
+     * @date 2020/8/26
      **/
     @Test
     public void addRecordTest() throws InterruptedException {
@@ -92,7 +93,6 @@ public class UISupportTest {
                 g2.setCronExpression("0 * 2 * * *");
                 g2.setDagId("g2");
                 monitor.getRegistryHelper().createPersistNode(RegistryHelper.GRAPHS + SP + g2.getDagId(), g2);
-
             }
         };
         register(helper, task1);
@@ -114,6 +114,11 @@ public class UISupportTest {
                 logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
                 s.release();
             }
+
+            @Override
+            public int getSplitsCount() {
+                return 2;
+            }
         };
         register(helper, task2);
 
@@ -132,7 +137,7 @@ public class UISupportTest {
             public void execute(ScheduleContext context) {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
                 logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
-                TestCase.assertEquals(4, s.availablePermits());
+                TestCase.assertEquals(4 + 2, s.availablePermits());
                 s.release(2);
                 // 删除g2节点
                 monitor.getRegistryHelper().delete(RegistryHelper.GRAPHS + SP + "g2");
@@ -155,7 +160,7 @@ public class UISupportTest {
             public void execute(ScheduleContext context) {
                 String fireDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getFireDate());
                 logger.info("task[{}-{}] is started at {}", getTaskName(), context.getTaskId(), fireDate);
-                TestCase.assertEquals(6, s.availablePermits());
+                TestCase.assertEquals(8, s.availablePermits());
                 s.release(3);
             }
         };
@@ -177,18 +182,12 @@ public class UISupportTest {
         graph.setCronExpression("0 * 1 * * *");
         graph.setDagId(dagId);
 
-        header.setScheduleStatus(ScheduleStatus.FINISHED);
-        n1.setScheduleStatus(ScheduleStatus.RUNNING);
-        n2.setScheduleStatus(ScheduleStatus.FINISHED);
-        graph.getRunningNodes().add(n1);
-
         // 创建dag
         helper.createPersistNode(RegistryHelper.GRAPHS + SP + graph.getDagId(), graph);
         graph.setScheduleId(UUID.randomUUID().toString().replaceAll("-", ""));
         graph.setFireDate(new Date());
         graph.setScheduleDate(new Date());
 
-        // 发布一个运行中的节点
         helper.createPersistNode(RegistryHelper.GRAPHS + SP + graph.getDagId() + SP + graph.getScheduleId(), graph);
 
         // 模拟调度节点上线
@@ -212,11 +211,16 @@ public class UISupportTest {
         });
         // 模拟controller掉线
         helper.destroy();
-        s.acquire(10 + 2 + 3 + 4);
-
+        s.acquire(10 + 2 + 3 + 4 + 2);
+        TestCase.assertEquals(0, s.availablePermits());
         GraphExecutionRecordService recordService = context.getBean(GraphExecutionRecordService.class);
         GraphExecutionRecord record = recordService.getByID(scheduleId);
         TestCase.assertNotNull(record);
+
+
+        TaskExecutionRecordService service = context.getBean(TaskExecutionRecordService.class);
+        long count = service.createQuery().addFilter("scheduleId", record.getScheduleId()).count();
+        TestCase.assertEquals(4, count);
         context.close();
     }
 

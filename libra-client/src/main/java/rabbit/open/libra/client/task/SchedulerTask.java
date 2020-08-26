@@ -12,6 +12,7 @@ import rabbit.open.libra.client.ZookeeperMonitor;
 import rabbit.open.libra.client.anno.ConditionalOnMissingBeanType;
 import rabbit.open.libra.client.dag.*;
 import rabbit.open.libra.client.exception.RepeatedScheduleException;
+import rabbit.open.libra.client.meta.TaskExecutionContext;
 import rabbit.open.libra.client.meta.TaskMeta;
 import rabbit.open.libra.dag.ScheduleStatus;
 import rabbit.open.libra.dag.schedule.ScheduleContext;
@@ -342,6 +343,26 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
         }
         childChangedListenerMap.put(relativeTaskNodePath, taskListener);
         helper.subscribeChildChanges(relativeTaskNodePath, taskListener);
+    }
+
+    /**
+     * task发布了
+     * @param	ctx
+     * @author  xiaoqianbin
+     * @date    2020/8/26
+     **/
+    public void onTaskPublished(TaskExecutionContext ctx) {
+        logger.debug("task [{}-{}-{}] is published", ctx.getScheduleId(), ctx.getTaskId(), ctx.getTaskName());
+    }
+
+    /**
+     * 任务执行完毕
+     * @param	ctx
+     * @author  xiaoqianbin
+     * @date    2020/8/26
+     **/
+    public void onTaskCompleted(TaskExecutionContext ctx) {
+        logger.debug("task [{}-{}-{}] is completed", ctx.getScheduleId(), ctx.getTaskId(), ctx.getTaskName());
     }
 
     /**

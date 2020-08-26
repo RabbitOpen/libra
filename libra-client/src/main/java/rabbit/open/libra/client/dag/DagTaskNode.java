@@ -86,6 +86,7 @@ public class DagTaskNode extends DagNode {
         String taskInstanceRelativePath = taskMetaPath + SP + context.getTaskId();
         if (!task.getRegistryHelper().exists(taskInstanceRelativePath)) {
             task.getRegistryHelper().create(taskInstanceRelativePath, context, CreateMode.PERSISTENT);
+            task.onTaskPublished(context);
             notifyChildrenChanged(taskMetaPath);
         }
         // 监听节点执行
@@ -107,6 +108,7 @@ public class DagTaskNode extends DagNode {
             task.unsubscribeTaskExecution(taskInstanceRelativePath);
             synchronized (this) {
                 if (ScheduleStatus.FINISHED != getScheduleStatus()) {
+                    task.onTaskCompleted(context);
                     getGraph().onDagNodeExecuted(this);
                 }
             }

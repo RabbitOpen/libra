@@ -10,7 +10,7 @@ import rabbit.open.orm.common.ddl.DDLType;
  * @date 2020/8/26
  **/
 @Component
-public class LibraUiSupportConfiguration {
+public class LibraConfiguration {
 
     /**
      * 数据库方言
@@ -61,87 +61,44 @@ public class LibraUiSupportConfiguration {
         return dialectType;
     }
 
-    public void setDialectType(String dialectType) {
-        this.dialectType = dialectType;
-    }
-
     public boolean isShowSql() {
         return showSql;
-    }
-
-    public void setShowSql(boolean showSql) {
-        this.showSql = showSql;
     }
 
     public boolean isShowSlowSql() {
         return showSlowSql;
     }
 
-    public void setShowSlowSql(boolean showSlowSql) {
-        this.showSlowSql = showSlowSql;
-    }
-
     public String getDdlType() {
         return ddlType;
-    }
-
-    public void setDdlType(String ddlType) {
-        this.ddlType = ddlType;
     }
 
     public String getUrl() {
         return url;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
     public String getUsername() {
         return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
     public String getDriverName() {
         return driverName;
-    }
-
-    public void setDriverName(String driverName) {
-        this.driverName = driverName;
     }
 
     public int getMaxSize() {
         return maxSize;
     }
 
-    public void setMaxSize(int maxSize) {
-        this.maxSize = maxSize;
-    }
-
     public int getMinSize() {
         return minSize;
-    }
-
-    public void setMinSize(int minSize) {
-        this.minSize = minSize;
     }
 
     public int getMaxIdleSize() {
         return maxIdleSize;
     }
 
-    public void setMaxIdleSize(int maxIdleSize) {
-        this.maxIdleSize = maxIdleSize;
-    }
 }

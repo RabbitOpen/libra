@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import rabbit.open.libra.ui.support.persist.config.LibraUiSupportConfiguration;
+import rabbit.open.libra.ui.support.persist.config.LibraConfiguration;
 import rabbit.open.libra.ui.support.persist.entity.TaskExecutionRecord;
 import rabbit.open.orm.core.dml.SessionFactory;
 import rabbit.open.orm.core.spring.RabbitTransactionManager;
@@ -29,7 +29,7 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
 
     @Scope("singleton")
     @Bean(initMethod = "init", destroyMethod = "shutdown")
-    public RabbitDataSource dataSource(LibraUiSupportConfiguration config) {
+    public RabbitDataSource dataSource(LibraConfiguration config) {
         RabbitDataSource dataSource = new RabbitDataSource();
         dataSource.setDriverClass(config.getDriverName());
         dataSource.setUrl(config.getUrl());
@@ -44,7 +44,7 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
 
     @Scope("singleton")
     @Bean(initMethod = "setUp", destroyMethod = "destroy")
-    public SessionFactory sessionFactory(DataSource dataSource, LibraUiSupportConfiguration config) {
+    public SessionFactory sessionFactory(DataSource dataSource, LibraConfiguration config) {
         SessionFactory sessionFactory = new SessionFactory();
         sessionFactory.setDataSource(dataSource);
         sessionFactory.setShowSql(config.isShowSql());
