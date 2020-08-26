@@ -140,6 +140,7 @@ public class RegistryHelper {
             }
             return false;
         } catch (Exception e) {
+            logger.error(e.getMessage(), e);
             return true;
         }
     }

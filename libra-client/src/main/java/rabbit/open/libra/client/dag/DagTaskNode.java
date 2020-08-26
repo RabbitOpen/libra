@@ -78,13 +78,7 @@ public class DagTaskNode extends DagNode {
 
     /**
      * <b>@description 执行调度 </b>
-     * @param task
      */
-    public void doSchedule(SchedulerTask task) {
-        this.task = task;
-        doSchedule();
-    }
-
     @Override
     protected void doSchedule() {
         generateTaskExecutionContext();
@@ -93,20 +87,30 @@ public class DagTaskNode extends DagNode {
         if (!task.getRegistryHelper().exists(taskInstanceRelativePath)) {
             task.getRegistryHelper().create(taskInstanceRelativePath, context, CreateMode.PERSISTENT);
             notifyChildrenChanged(taskMetaPath);
-        } else {
-            List<String> children = task.getRegistryHelper().getChildren(taskInstanceRelativePath);
-            if (isTaskFinished(children)) {
-                getGraph().onDagNodeExecuted(this);
-                return;
+        }
+        // 监听节点执行
+        task.monitorTaskExecution(taskInstanceRelativePath, (path, children) -> onTaskSplitCompleted(taskInstanceRelativePath, children));
+        // 检测节点是否已经执行完毕了
+        List<String> children = task.getRegistryHelper().getChildren(taskInstanceRelativePath);
+        onTaskSplitCompleted(taskInstanceRelativePath, children);
+    }
+
+    /**
+     * 任务节点片执行完毕回调
+     * @param	taskInstanceRelativePath
+	 * @param	children
+     * @author  xiaoqianbin
+     * @date    2020/8/26
+     **/
+    private void onTaskSplitCompleted(String taskInstanceRelativePath, List<String> children) {
+        if (!CollectionUtils.isEmpty(children) && isTaskFinished(children)) {
+            task.unsubscribeTaskExecution(taskInstanceRelativePath);
+            synchronized (this) {
+                if (ScheduleStatus.FINISHED != getScheduleStatus()) {
+                    getGraph().onDagNodeExecuted(this);
+                }
             }
         }
-        task.monitorTaskExecution(taskInstanceRelativePath, (path, children) -> {
-            if (!CollectionUtils.isEmpty(children) && isTaskFinished(children)) {
-                task.unsubscribeTaskExecution(path.substring(task.getRegistryHelper().getNamespace().length()));
-                getGraph().onDagNodeExecuted(this);
-                return;
-            }
-        });
     }
 
     /**

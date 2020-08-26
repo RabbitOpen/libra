@@ -210,12 +210,27 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
                 }
                 // 不能直接从dagMetaMap中读取使用（dagMetaMap中的对象是单例的，会被调度任务污染）
                 SchedulableDirectedAcyclicGraph graph = helper.readData(RegistryHelper.GRAPHS + SP + graphEntry.getKey());
-                Date nextScheduleTime = graph.getNextScheduleTime();
-                if (nextScheduleTime.before(new Date())) {
-                    scheduleGraph(new RuntimeDagInstance(graph));
-                    graph.setLastFireDate(nextScheduleTime);
-                    updateDagInfo(graph);
-                }
+                try2ScheduleTargetGraph(graph);
+            }
+        }
+    }
+
+    /**
+     * 尝试调度一个dag
+     * @param	graph
+     * @author  xiaoqianbin
+     * @date    2020/8/26
+     **/
+    private void try2ScheduleTargetGraph(SchedulableDirectedAcyclicGraph graph) {
+        Date nextExpectedScheduleTime = graph.getNextScheduleTime();
+        if (nextExpectedScheduleTime.before(new Date())) {
+            try {
+                scheduleGraph(new RuntimeDagInstance(graph));
+                graph.setLastFireDate(nextExpectedScheduleTime);
+                updateDagInfo(graph);
+            } catch (RepeatedScheduleException e) {
+                // TO DO: ignore this exception
+                logger.warn(e.getLocalizedMessage());
             }
         }
     }
