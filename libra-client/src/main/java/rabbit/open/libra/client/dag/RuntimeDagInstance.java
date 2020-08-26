@@ -12,7 +12,6 @@ import java.util.*;
  * @author xiaoqianbin
  * @date 2020/8/20
  **/
-@SuppressWarnings("serial")
 public class RuntimeDagInstance extends SchedulableDirectedAcyclicGraph {
 
     private static final long serialVersionUID = 1L;

@@ -333,7 +333,6 @@ public class SceneTest {
         n4.addNextNode(tail);
         Date fireDate = new Date();
         fireDate.setTime(fireDate.getTime() - 1000);
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         RuntimeDagInstance graph = new RuntimeDagInstance(header, tail, 64);
         Calendar c = Calendar.getInstance();
         String dagId = "recover-graph";

@@ -10,7 +10,6 @@ import java.util.Map;
  * @author xiaoqianbin
  * @date 2020/8/8
  **/
-@SuppressWarnings("serial")
 public class ScheduleContext implements Serializable {
 
     public static final long serialVersionUID = 1L;
