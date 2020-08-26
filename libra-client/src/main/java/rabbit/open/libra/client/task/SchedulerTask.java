@@ -248,7 +248,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
             for (String child : children) {
                 RuntimeDagInstance graph = helper.readData(relativePath + SP + child);
                 if (isScheduledInstance(graph)) {
-                    scheduleFinished(graph.getDagId());
+                    scheduleFinished(graph);
                     continue;
                 }
                 graph.injectTask(this);
@@ -266,11 +266,13 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
      * @author xiaoqianbin
      * @date 2020/8/24
      **/
-    protected synchronized void startSchedule(RuntimeDagInstance graph) {
+    protected synchronized boolean startSchedule(RuntimeDagInstance graph) {
         if (!dagRuntimeMap.containsKey(graph.getDagId())) {
             dagRuntimeMap.put(graph.getDagId(), graph);
             graph.startSchedule();
+            return true;
         }
+        return false;
     }
 
     /**
@@ -453,13 +455,13 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
 
     /**
      * dag 调度结束
-     * @param    dagId
+     * @param    graph
      * @author xiaoqianbin
      * @date 2020/8/24
      **/
-    public void scheduleFinished(String dagId) {
-        RuntimeDagInstance dagInstance = dagRuntimeMap.remove(dagId);
-        Set<DagTaskNode> nodes = dagInstance.getNodes();
+    public void scheduleFinished(RuntimeDagInstance graph) {
+        dagRuntimeMap.remove(graph.getDagId());
+        Set<DagTaskNode> nodes = graph.getNodes();
         for (DagTaskNode node : nodes) {
             if (node instanceof DagHeader || node instanceof DagTail) {
                 continue;
@@ -469,7 +471,7 @@ public class SchedulerTask extends ZookeeperMonitor implements Task {
             logger.info("delete task node [{}]", relativePath);
             helper.deleteRecursive(relativePath);
         }
-        helper.delete(RegistryHelper.GRAPHS + SP + dagId + SP + dagInstance.getScheduleId());
+        helper.delete(RegistryHelper.GRAPHS + SP + graph.getDagId() + SP + graph.getScheduleId());
     }
 
     /**

@@ -5,12 +5,22 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans-4.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:component-scan base-package="rabbit.open.libra.test"/>
+    <context:component-scan base-package="rabbit.open.libra.ui"/>
 
     <bean id="registryConfig" class="rabbit.open.libra.client.RegistryConfig">
-        <property name="namespace" value="/megrez/loan/distributed"/>
+        <property name="namespace" value="/megrez/loan/ui"/>
         <property name="hosts" value="localhost:2181"/>
     </bean>
+
+
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath*:jdbc.properties</value>
+            </list>
+        </property>
+    </bean>
+
 
 </beans>	
 

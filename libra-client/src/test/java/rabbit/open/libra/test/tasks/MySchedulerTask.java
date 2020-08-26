@@ -1,6 +1,7 @@
 package rabbit.open.libra.test.tasks;
 
 import org.springframework.stereotype.Component;
+import rabbit.open.libra.client.dag.RuntimeDagInstance;
 import rabbit.open.libra.client.dag.SchedulableDirectedAcyclicGraph;
 import rabbit.open.libra.client.task.SchedulerTask;
 
@@ -45,10 +46,10 @@ public class MySchedulerTask extends SchedulerTask {
     }
 
     @Override
-    public void scheduleFinished(String dagId) {
-        super.scheduleFinished(dagId);
+    public void scheduleFinished(RuntimeDagInstance graph) {
+        super.scheduleFinished(graph);
         if (null != scheduleFinished) {
-            scheduleFinished.accept(dagId);
+            scheduleFinished.accept(graph.getDagId());
         }
     }
 

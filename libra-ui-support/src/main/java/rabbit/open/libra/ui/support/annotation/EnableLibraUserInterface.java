@@ -3,6 +3,8 @@ package rabbit.open.libra.ui.support.annotation;
 import org.springframework.context.annotation.Import;
 import rabbit.open.libra.ui.support.persist.LibraController;
 import rabbit.open.libra.ui.support.persist.LibraMvcSupporter;
+import rabbit.open.libra.ui.support.persist.config.LibraUiSupportConfiguration;
+import rabbit.open.libra.ui.support.persist.service.GraphExecutionRecordService;
 import rabbit.open.libra.ui.support.persist.service.TaskExecutionRecordService;
 import rabbit.open.libra.ui.support.task.WebSupportedSchedulerTask;
 
@@ -18,6 +20,9 @@ import java.lang.annotation.Target;
  **/
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({LibraMvcSupporter.class, LibraController.class, WebSupportedSchedulerTask.class, TaskExecutionRecordService.class})
+@Import({LibraMvcSupporter.class, LibraController.class, WebSupportedSchedulerTask.class,
+        LibraUiSupportConfiguration.class,
+        GraphExecutionRecordService.class,
+        TaskExecutionRecordService.class})
 public @interface EnableLibraUserInterface {
 }

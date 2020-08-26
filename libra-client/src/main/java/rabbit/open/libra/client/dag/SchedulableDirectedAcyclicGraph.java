@@ -12,7 +12,6 @@ import java.util.Date;
  * @author xiaoqianbin
  * @date 2020/8/18
  **/
-@SuppressWarnings("serial")
 public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTaskNode> {
 
     private static final long serialVersionUID = 1L;
@@ -91,7 +90,7 @@ public class SchedulableDirectedAcyclicGraph extends DirectedAcyclicGraph<DagTas
      **/
     @Override
     protected void onScheduleFinished() {
-        task.scheduleFinished(getDagId());
+        task.scheduleFinished((RuntimeDagInstance) this);
     }
 
     @Override

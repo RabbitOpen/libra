@@ -5,10 +5,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import rabbit.open.libra.ui.support.persist.config.LibraUiSupportConfiguration;
 import rabbit.open.libra.ui.support.persist.entity.TaskExecutionRecord;
-import rabbit.open.libra.ui.support.task.WebSupportedSchedulerTask;
 import rabbit.open.orm.core.dml.SessionFactory;
 import rabbit.open.orm.core.spring.RabbitTransactionManager;
+import rabbit.open.orm.datasource.RabbitDataSource;
+
+import javax.sql.DataSource;
 
 /**
  * web页面支持
@@ -18,10 +21,6 @@ import rabbit.open.orm.core.spring.RabbitTransactionManager;
 @Configuration
 public class LibraMvcSupporter implements WebMvcConfigurer {
 
-    SessionFactory sessionFactory;
-
-    RabbitTransactionManager transactionManager;
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // static resources
@@ -29,17 +28,30 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
     }
 
     @Scope("singleton")
+    @Bean(initMethod = "init", destroyMethod = "shutdown")
+    public RabbitDataSource dataSource(LibraUiSupportConfiguration config) {
+        RabbitDataSource dataSource = new RabbitDataSource();
+        dataSource.setDriverClass(config.getDriverName());
+        dataSource.setUrl(config.getUrl());
+        dataSource.setUsername(config.getUsername());
+        dataSource.setPassword(config.getPassword());
+        dataSource.setMaxIdle(config.getMaxIdleSize());
+        dataSource.setMaxSize(config.getMaxSize());
+        dataSource.setMinSize(config.getMinSize());
+        dataSource.setShowSlowSql(config.isShowSlowSql());
+        return dataSource;
+    }
+
+    @Scope("singleton")
     @Bean(initMethod = "setUp", destroyMethod = "destroy")
-    public SessionFactory sessionFactory(WebSupportedSchedulerTask webSchedulerTask) {
-        if (null == sessionFactory) {
-            sessionFactory = new SessionFactory();
-            sessionFactory.setDataSource(webSchedulerTask.getDataSource());
-            sessionFactory.setShowSql(webSchedulerTask.isShowSql());
-            sessionFactory.setDdl(webSchedulerTask.getDdlType().name());
-            sessionFactory.setFormatSql(true);
-            sessionFactory.setDialect(webSchedulerTask.getDialectType().name());
-            sessionFactory.setPackages2Scan(getEntityPackageName());
-        }
+    public SessionFactory sessionFactory(DataSource dataSource, LibraUiSupportConfiguration config) {
+        SessionFactory sessionFactory = new SessionFactory();
+        sessionFactory.setDataSource(dataSource);
+        sessionFactory.setShowSql(config.isShowSql());
+        sessionFactory.setDdl(config.getDdlType());
+        sessionFactory.setFormatSql(true);
+        sessionFactory.setDialect(config.getDialectType());
+        sessionFactory.setPackages2Scan(getEntityPackageName());
         return sessionFactory;
     }
 
@@ -62,10 +74,8 @@ public class LibraMvcSupporter implements WebMvcConfigurer {
     @Scope("singleton")
     @Bean
     public RabbitTransactionManager rabbitTransactionManager(SessionFactory factory) {
-        if (null == transactionManager) {
-            transactionManager = new RabbitTransactionManager();
-            transactionManager.setSessionFactory(factory);
-        }
+        RabbitTransactionManager transactionManager = new RabbitTransactionManager();
+        transactionManager.setSessionFactory(factory);
         return transactionManager;
     }
 
